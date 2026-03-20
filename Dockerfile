@@ -17,7 +17,10 @@ WORKDIR /var/www/html
 # Copy all project files into the container
 COPY . .
 
-# Run composer to install Chat WebSocket dependencies
+# ERADICATE any Windows-native vendor folders that were accidentally dragged to GitHub
+RUN rm -rf vendor composer.lock
+
+# Run composer to perform a pristine Linux build of Chat WebSocket dependencies
 RUN composer install --no-dev --optimize-autoloader
 
 # Create Apache configuration to proxy /ws requests back to Ratchet internally on 8080
