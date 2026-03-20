@@ -6,10 +6,11 @@ $username = '2ss5xha7cGNrmKW.root';
 $password = 'yf5BJZ5I2yZVwxm7';
 
 try {
+    // Point directly to the secure Linux Server SSL Certificate path inside the Docker container
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        1012 => __DIR__ . '/cacert.pem', // PDO::MYSQL_ATTR_SSL_CA
-        1014 => false // PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT (ignore mismatch)
+        PDO::MYSQL_ATTR_SSL_CA => '/etc/ssl/certs/ca-certificates.crt',
+        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
     ];
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password, $options);
 } catch(PDOException $e) {
