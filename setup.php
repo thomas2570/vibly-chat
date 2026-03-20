@@ -8,8 +8,8 @@ $password = 'yf5BJZ5I2yZVwxm7';
 try {
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        1012 => __DIR__ . '/cacert.pem', // PDO::MYSQL_ATTR_SSL_CA
-        1014 => false // PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT (ignore mismatch)
+        PDO::MYSQL_ATTR_SSL_CA => file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : __DIR__ . '/cacert.pem',
+        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
     ];
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $username, $password, $options);
     
