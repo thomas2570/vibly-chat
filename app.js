@@ -14,9 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let targetUser = null;
 
     function connect() {
-        // Automatically determine the exact URL the website is running on
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = protocol + '//' + window.location.host + '/ws';
+        // Automatically determine if we are running locally on Windows or Live on Render
+        let wsUrl = '';
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Local XAMPP Testing
+            wsUrl = 'ws://localhost:8080';
+        } else {
+            // Render / Cloud Deployment
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl = protocol + '//' + window.location.host + '/ws';
+        }
         
         ws = new WebSocket(wsUrl);
 

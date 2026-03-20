@@ -23,6 +23,7 @@ RUN composer install --no-dev --optimize-autoloader
 # Create Apache configuration to proxy /ws requests back to Ratchet internally on 8080
 RUN echo '<VirtualHost *:80>\n\
     DocumentRoot /var/www/html\n\
+    ProxyPreserveHost On\n\
     ProxyPass /ws ws://127.0.0.1:8080/\n\
     ProxyPassReverse /ws ws://127.0.0.1:8080/\n\
 </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
