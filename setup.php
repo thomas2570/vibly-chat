@@ -15,14 +15,25 @@ try {
     
     echo "Connected to TiDB Serverless Cloud Database successfully.\n";
     
-    $sql = "CREATE TABLE IF NOT EXISTS chatbot (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )";
-    $pdo->exec($sql);
-    echo "Table 'chatbot' created successfully in cloud!\n";
+    $sql = "CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+$pdo->exec($sql);
+echo "Table 'users' created successfully or already exists.<br>";
+
+$sqlMessages = "CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender VARCHAR(50) NOT NULL,
+    receiver VARCHAR(50) NOT NULL,
+    message LONGTEXT,
+    is_image BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+$pdo->exec($sqlMessages);
+echo "Table 'messages' created successfully or already exists.<br>";
     echo "Setup complete! You can now Register or Login on Vibly.\n";
 
 } catch(PDOException $e) {

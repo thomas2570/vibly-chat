@@ -3,14 +3,21 @@ namespace ChatApp;
 
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
+use PDO;
+
+// Bootstrap DB configuration so $pdo becomes available structurally
+require dirname(__DIR__) . '/db.php';
 
 class Chat implements MessageComponentInterface {
     protected $clients;
     protected $userConnections; // Store mappings of username => ConnectionInterface
+    protected $pdo;
 
     public function __construct() {
+        global $pdo;
         $this->clients = new \SplObjectStorage;
         $this->userConnections = [];
+        $this->pdo = $pdo;
     }
 
     public function onOpen(ConnectionInterface $conn) {
@@ -30,6 +37,7 @@ class Chat implements MessageComponentInterface {
                 $this->userConnections[$username] = $from;
                 $from->username = $username;
                 echo "User {$username} registered on connection {$from->resourceId}\n";
+                $this->broadcastPresence();
             }
             return;
         }
@@ -39,6 +47,21 @@ class Chat implements MessageComponentInterface {
             $target = $data['target'] ?? '';
             $message = $data['message'] ?? '';
             $sender = $from->username ?? 'Unknown';
+            $isImage = isset($data['isImage']) && $data['isImage'] ? 1 : 0;
+
+            // Save payload to Database robustly (Catching "Server has gone away" timeouts if left idle for 8+ hours)
+            if ($target) {
+                try {
+                    $stmt = $this->pdo->prepare("INSERT INTO messages (sender, receiver, message, is_image) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$sender, $target, $message, $isImage]);
+                } catch (\PDOException $e) {
+                    require dirname(__DIR__) . '/db.php';
+                    global $pdo;
+                    $this->pdo = $pdo;
+                    $stmt = $this->pdo->prepare("INSERT INTO messages (sender, receiver, message, is_image) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$sender, $target, $message, $isImage]);
+                }
+            }
 
             // Send to target if online
             if ($target && isset($this->userConnections[$target])) {
@@ -46,7 +69,8 @@ class Chat implements MessageComponentInterface {
                 $payload = json_encode([
                     'type'     => 'chat',
                     'sender'   => $sender,
-                    'message'  => $message
+                    'message'  => $message,
+                    'isImage'  => $isImage === 1
                 ]);
                 $targetConn->send($payload);
                 echo "Private message from {$sender} to {$target}\n";
@@ -62,8 +86,20 @@ class Chat implements MessageComponentInterface {
         if (isset($conn->username)) {
             unset($this->userConnections[$conn->username]);
             echo "User {$conn->username} disconnected\n";
+            $this->broadcastPresence();
         } else {
             echo "Connection {$conn->resourceId} disconnected\n";
+        }
+    }
+
+    private function broadcastPresence() {
+        $onlineUsers = array_keys($this->userConnections);
+        $payload = json_encode([
+            'type' => 'presence',
+            'users' => $onlineUsers
+        ]);
+        foreach ($this->clients as $client) {
+            $client->send($payload);
         }
     }
 

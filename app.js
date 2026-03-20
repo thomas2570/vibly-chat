@@ -123,9 +123,32 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesContainer.style.display = 'flex';
         chatInputArea.style.display = 'flex';
         
-        // Clear old messages (since they aren't persisted in DB right now)
+        // Clear old messages and show loading state
         messagesContainer.innerHTML = '';
-        addSystemMessage(`Started private chat with ${selectedUsername}`);
+        addSystemMessage(`Loading chat history with ${selectedUsername}...`);
+
+        // Fetch offline messages from the database
+        fetch('fetch_messages.php?target=' + encodeURIComponent(selectedUsername))
+            .then(res => res.json())
+            .then(messages => {
+                messagesContainer.innerHTML = ''; // Clear loading message
+                
+                if (messages.length === 0) {
+                    addSystemMessage(`Started private chat with ${selectedUsername}`);
+                } else {
+                    messages.forEach(m => {
+                        const isOutgoing = (m.sender === username);
+                        const type = isOutgoing ? 'outgoing' : 'incoming';
+                        const isImage = parseInt(m.is_image) === 1;
+                        addMessage(m.message, type, m.sender, isImage);
+                    });
+                }
+            })
+            .catch(err => {
+                messagesContainer.innerHTML = '';
+                addSystemMessage(`Started private chat with ${selectedUsername}`);
+                console.error('Failed to load history:', err);
+            });
     }
 
     if (backBtn) {
