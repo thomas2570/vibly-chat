@@ -8,10 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatTitle = document.getElementById('chat-title');
     const emptyState = document.getElementById('empty-state');
     const chatInputArea = document.getElementById('chat-input-area');
+    const backBtn = document.getElementById('back-btn');
+    const imageInput = document.getElementById('image-input');
 
     let ws;
     let username = typeof MY_USERNAME !== 'undefined' ? MY_USERNAME : "Anonymous";
     let targetUser = null;
+    let onlineUsers = [];
 
     function connect() {
         // Automatically determine if we are running locally on Windows or Live on Render
@@ -41,10 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const data = JSON.parse(event.data);
                 
-                if (data.type === 'chat') {
+                if (data.type === 'presence') {
+                    onlineUsers = data.users;
+                    updateUserListIndicators();
+                } else if (data.type === 'chat') {
                     // Only show message if we are actively chatting with the sender
                     if (data.sender === targetUser) {
-                        addMessage(data.message, 'incoming', data.sender);
+                        addMessage(data.message, 'incoming', data.sender, data.isImage);
                     } else {
                         // Normally you'd want a notification badge here
                         console.log(`Unread message from ${data.sender}:`, data.message);
@@ -79,6 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 users.forEach(u => {
                     const li = document.createElement('li');
                     li.textContent = u.username;
+                    
+                    // Add online dot if they are in the active connections array
+                    if (onlineUsers.includes(u.username) && u.username !== username) {
+                        const dot = document.createElement('span');
+                        dot.className = 'online-dot';
+                        li.appendChild(dot);
+                    }
+
                     if (u.username === targetUser) {
                         li.classList.add('active');
                     }
@@ -87,6 +101,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             })
             .catch(err => console.error('Error fetching users:', err));
+    }
+
+    function updateUserListIndicators() {
+        // Simple re-trigger of the search to redraw the dots instantly
+        searchUsers(userSearch.value.trim());
     }
 
     function selectUser(selectedUsername, liElement) {
@@ -98,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         chatTitle.textContent = selectedUsername;
         
-        // Switch views
+        // Switch views and activate Mobile Chat overlay
+        document.body.classList.add('chat-active');
         emptyState.style.display = 'none';
         messagesContainer.style.display = 'flex';
         chatInputArea.style.display = 'flex';
@@ -106,6 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear old messages (since they aren't persisted in DB right now)
         messagesContainer.innerHTML = '';
         addSystemMessage(`Started private chat with ${selectedUsername}`);
+    }
+
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            document.body.classList.remove('chat-active');
+        });
     }
 
     userSearch.addEventListener('input', (e) => {
@@ -129,7 +155,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function addMessage(text, type, senderName = '') {
+    // Image Upload Logic via Base64 Reader
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64Image = event.target.result;
+            
+            if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
+                const payload = JSON.stringify({ 
+                    type: 'chat', 
+                    target: targetUser, 
+                    message: base64Image,
+                    isImage: true
+                });
+                ws.send(payload);
+                addMessage(base64Image, 'outgoing', username, true);
+            }
+            
+            // Clear input so same image can be picked again
+            imageInput.value = '';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function addMessage(text, type, senderName = '', isImage = false) {
         const msgWrapper = document.createElement('div');
         msgWrapper.classList.add('message-wrapper', type);
 
@@ -140,11 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
             msgWrapper.appendChild(nameEl);
         }
 
-        const msgEl = document.createElement('div');
-        msgEl.classList.add('message');
-        msgEl.textContent = text;
+        if (isImage) {
+            const imgEl = document.createElement('img');
+            imgEl.src = text;
+            imgEl.classList.add('message-image');
+            msgWrapper.appendChild(imgEl);
+        } else {
+            const msgEl = document.createElement('div');
+            msgEl.classList.add('message');
+            msgEl.textContent = text;
+            msgWrapper.appendChild(msgEl);
+        }
         
-        msgWrapper.appendChild(msgEl);
         messagesContainer.appendChild(msgWrapper);
         scrollToBottom();
     }

@@ -37,8 +37,11 @@ if (!isset($_SESSION['username'])) {
         <div class="main-chat">
             <header class="chat-header">
                 <div class="header-info">
-                    <h1 id="chat-title" style="margin: 0; font-size: 1.25rem;">Select a conversation</h1>
-                    <span id="connection-status" class="status disconnected">Disconnected</span>
+                    <button id="back-btn" class="mobile-only" style="display: none;">⬅️</button>
+                    <div>
+                        <h1 id="chat-title" style="margin: 0; font-size: 1.25rem;">Select a conversation</h1>
+                        <span id="connection-status" class="status disconnected">Disconnected</span>
+                    </div>
                 </div>
             </header>
 
@@ -47,6 +50,8 @@ if (!isset($_SESSION['username'])) {
                 <!-- Messages will appear here -->
             </div>
             <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                <label for="image-input" class="image-upload-btn">📎</label>
+                <input type="file" id="image-input" accept="image/*" style="display: none;">
                 <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
                 <button id="send-btn">Send</button>
             </div>
