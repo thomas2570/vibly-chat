@@ -5,19 +5,22 @@ use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use PDO;
 
-// Bootstrap DB configuration so $pdo becomes available structurally
-require dirname(__DIR__) . '/db.php';
-
 class Chat implements MessageComponentInterface {
     protected $clients;
     protected $userConnections; // Store mappings of username => ConnectionInterface
     protected $pdo;
 
     public function __construct() {
-        global $pdo;
         $this->clients = new \SplObjectStorage;
         $this->userConnections = [];
-        $this->pdo = $pdo;
+        
+        // Native PDO initialization to bypass Composer scoped global closures
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::MYSQL_ATTR_SSL_CA => file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : dirname(__DIR__) . '/cacert.pem',
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
+        ];
+        $this->pdo = new PDO("mysql:host=gateway01.ap-southeast-1.prod.aws.tidbcloud.com;port=4000;dbname=test", "2ss5xha7cGNrmKW.root", "yf5BJZ5I2yZVwxm7", $options);
     }
 
     public function onOpen(ConnectionInterface $conn) {
@@ -55,9 +58,13 @@ class Chat implements MessageComponentInterface {
                     $stmt = $this->pdo->prepare("INSERT INTO messages (sender, receiver, message, is_image) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$sender, $target, $message, $isImage]);
                 } catch (\PDOException $e) {
-                    require dirname(__DIR__) . '/db.php';
-                    global $pdo;
-                    $this->pdo = $pdo;
+                    // Critical connection drop fallback
+                    $options = [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::MYSQL_ATTR_SSL_CA => file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : dirname(__DIR__) . '/cacert.pem',
+                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
+                    ];
+                    $this->pdo = new PDO("mysql:host=gateway01.ap-southeast-1.prod.aws.tidbcloud.com;port=4000;dbname=test", "2ss5xha7cGNrmKW.root", "yf5BJZ5I2yZVwxm7", $options);
                     $stmt = $this->pdo->prepare("INSERT INTO messages (sender, receiver, message, is_image) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$sender, $target, $message, $isImage]);
                 }
