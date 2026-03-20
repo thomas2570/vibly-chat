@@ -30,15 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="chat-container" style="justify-content: center; padding: 40px; text-align: center;">
-        <h1 style="margin-bottom: 20px;">Welcome to Vibly</h1>
-        <?php if($error): ?><p style="color: #f87171; margin-bottom: 15px; font-size: 0.9rem;"><?= htmlspecialchars($error) ?></p><?php endif; ?>
-        <form method="POST" style="display: flex; flex-direction: column; gap: 15px;">
-            <input type="text" name="username" placeholder="Username" required style="padding: 15px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: white; font-family: 'Inter', sans-serif;">
-            <input type="password" name="password" placeholder="Password" required style="padding: 15px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: white; font-family: 'Inter', sans-serif;">
-            <button type="submit" id="send-btn" style="padding: 15px; border-radius: 8px; font-size: 1rem; width: 100%;">Sign In</button>
-        </form>
-        <p style="margin-top: 25px; font-size: 0.9rem; color: var(--text-muted);">Don't have an account? <a href="register.php" style="color: var(--primary); text-decoration: none; font-weight: 500;">Create one</a></p>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h1>Welcome to Vibly</h1>
+            <p>Please log in to your account</p>
+            <?php if($error): ?><div class="error-msg"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+            <form method="POST" class="auth-form">
+                <input type="text" name="username" placeholder="Username" required autocomplete="off">
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Sign In</button>
+            </form>
+            <div class="auth-links">
+                Don't have an account? <a href="register.php">Create one</a>
+            </div>
+        </div>
     </div>
 </body>
 </html>
