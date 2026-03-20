@@ -18,10 +18,10 @@ WORKDIR /var/www/html
 COPY . .
 
 # ERADICATE any Windows-native vendor folders that were accidentally dragged to GitHub
-RUN rm -rf vendor composer.lock
+RUN rm -rf vendor
 
-# Run composer to perform a pristine Linux build of Chat WebSocket dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Run composer non-interactively to perform a pristine Linux build of Chat WebSocket dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Create Apache configuration to proxy /ws requests back to Ratchet internally on 8080
 RUN echo '<VirtualHost *:80>\n\
