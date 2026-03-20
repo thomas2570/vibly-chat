@@ -24,8 +24,9 @@ RUN composer install --no-dev --optimize-autoloader
 RUN echo '<VirtualHost *:80>\n\
     DocumentRoot /var/www/html\n\
     ProxyPreserveHost On\n\
-    ProxyPass /ws ws://127.0.0.1:8080/\n\
-    ProxyPassReverse /ws ws://127.0.0.1:8080/\n\
+    RewriteEngine On\n\
+    RewriteCond %{HTTP:Upgrade} websocket [NC]\n\
+    RewriteRule ^/ws/?(.*) "ws://127.0.0.1:8080/$1" [P,L]\n\
 </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
 # Setup Supervisor to run both Apache and Ratchet 
