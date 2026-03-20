@@ -19,7 +19,9 @@ if (!isset($_SESSION['username'])) {
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2 style="margin: 0; font-size: 1.5rem; letter-spacing: 0.5px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Vibly</h2>
+                <div class="brand">
+                    <h2>Vibly</h2>
+                </div>
                 <div class="search-box-container">
                     <input type="text" id="user-search" placeholder="Search for users..." autocomplete="off">
                 </div>
@@ -39,7 +41,7 @@ if (!isset($_SESSION['username'])) {
                 <div class="header-info">
                     <button id="back-btn" class="mobile-only" style="display: none;">⬅️</button>
                     <div>
-                        <h1 id="chat-title" style="margin: 0; font-size: 1.25rem;">Select a conversation</h1>
+                        <h1 id="chat-title">Select a conversation</h1>
                         <span id="connection-status" class="status disconnected">Disconnected</span>
                     </div>
                 </div>
