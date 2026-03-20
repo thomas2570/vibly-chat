@@ -1,0 +1,67 @@
+<?php
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibly</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 style="margin: 0; font-size: 1.5rem; letter-spacing: 0.5px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Vibly</h2>
+                <div class="search-box-container">
+                    <input type="text" id="user-search" placeholder="Search for users..." autocomplete="off">
+                </div>
+            </div>
+            <ul id="user-list" class="user-list">
+                <!-- Search results will populate here -->
+            </ul>
+            <div class="sidebar-footer">
+                <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
+                <a href="logout.php" class="logout-link">Logout</a>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <div class="main-chat">
+            <header class="chat-header">
+                <div class="header-info">
+                    <h1 id="chat-title" style="margin: 0; font-size: 1.25rem;">Select a conversation</h1>
+                    <span id="connection-status" class="status disconnected">Disconnected</span>
+                </div>
+            </header>
+
+            <!-- Shown when chatting -->
+            <div class="chat-messages" id="chat-messages" style="display: none;">
+                <!-- Messages will appear here -->
+            </div>
+            <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button id="send-btn">Send</button>
+            </div>
+
+            <!-- Shown when NO chat is selected -->
+            <div class="empty-state" id="empty-state">
+                <p>Search for a user on the left to start private chatting!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inject the PHP session username into a global JS variable securely
+        const MY_USERNAME = <?php echo json_encode($_SESSION['username']); ?>;
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>

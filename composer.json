@@ -1,0 +1,12 @@
+{
+    "name": "thoma/realtime-chat",
+    "description": "Real-time PHP Chatbot using Ratchet",
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "ChatApp\\": "src/"
+        }
+    }
+}
