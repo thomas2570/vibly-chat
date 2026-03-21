@@ -2,7 +2,8 @@
     "name": "thoma/realtime-chat",
     "description": "Real-time PHP Chatbot using Ratchet",
     "require": {
-        "cboden/ratchet": "^0.4.4"
+        "cboden/ratchet": "^0.4.4",
+        "phpmailer/phpmailer": "^6.8"
     },
     "autoload": {
         "psr-4": {

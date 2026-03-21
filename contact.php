@@ -1,5 +1,11 @@
 <?php
 session_start();
+// Include Composer's autoloader for PHPMailer
+require 'vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // If user is logged in, grab username, else 'Guest'
 $username = $_SESSION['username'] ?? 'Guest';
 $error = '';
@@ -11,18 +17,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (empty($problem)) {
         $error = "Please describe your problem.";
     } else {
-        // Send problem reports to the owner's email address
-        $to = "thomasramesh449@gmail.com"; 
-        $subject = "Vibly Problem Report from: $username";
-        $message = "Username: $username\n\nProblem Recorded:\n$problem";
-        $headers = "From: noreply@vibly-chat.onrender.com";
-        
-        // Use PHP's built-in mail. Note: requires Sendmail or SMTP on the server.
-        if (@mail($to, $subject, $message, $headers)) {
+        $mail = new PHPMailer(true);
+        try {
+            // Server settings for Gmail
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'thomasramesh449@gmail.com';
+            
+            // IMPORTANT: You MUST generate a 16-letter Google App Password!
+            // Do not use your normal Gmail password here.
+            $mail->Password   = 'sficvuiolqthlqmc'; 
+            
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            // Recipients
+            $mail->setFrom('thomasramesh449@gmail.com', 'Vibly Support Form');
+            $mail->addAddress('thomasramesh449@gmail.com');
+
+            // Content
+            $mail->isHTML(false);
+            $mail->Subject = "Vibly Problem Report from: $username";
+            $mail->Body    = "Username: $username\n\nProblem Recorded:\n$problem";
+
+            $mail->send();
             $success = "Your problem has been reported successfully. Thank you!";
-        } else {
-            // Fallback for servers without mail() configured
-            $success = "Your problem was recorded. (Note: Email sending might require server SMTP config to arrive in inbox).";
+        } catch (Exception $e) {
+            $error = "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
         }
     }
 }
