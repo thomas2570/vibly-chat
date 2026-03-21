@@ -15,7 +15,7 @@ $user2 = $_GET['target'];
 try {
     // Select all messages explicitly bridging these two users, ordered chronologically
     $stmt = $pdo->prepare("
-        SELECT * FROM messages 
+        SELECT *, UNIX_TIMESTAMP(created_at) as unix_time FROM messages 
         WHERE (sender = ? AND receiver = ?) 
            OR (sender = ? AND receiver = ?)
         ORDER BY created_at ASC

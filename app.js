@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isOutgoing = (m.sender === username);
                         const type = isOutgoing ? 'outgoing' : 'incoming';
                         const isImage = parseInt(m.is_image) === 1;
-                        addMessage(m.message, type, m.sender, isImage, m.created_at, m.is_read);
+                        addMessage(m.message, type, m.sender, isImage, m.unix_time || m.created_at, m.is_read || 0);
                     });
                 }
                 
@@ -163,16 +163,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessage() {
         const msg = messageInput.value.trim();
         if (msg && targetUser && ws && ws.readyState === WebSocket.OPEN) {
+            const unixTime = Math.floor(Date.now() / 1000);
             const payload = JSON.stringify({ 
                 type: 'chat', 
                 target: targetUser, 
-                message: msg 
+                message: msg,
+                unix_time: unixTime 
             });
             ws.send(payload);
             
-            const now = new Date();
-            const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
-            addMessage(msg, 'outgoing', username, false, timeStr, 0);
+            addMessage(msg, 'outgoing', username, false, unixTime, 0);
             messageInput.value = '';
         }
     }
@@ -200,18 +200,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Compress out into a fast lightweight JPEG Base64 container
                 const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                const unixTime = Math.floor(Date.now() / 1000);
 
                 if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
                     const payload = JSON.stringify({ 
                         type: 'chat', 
                         target: targetUser, 
                         message: compressedBase64,
-                        isImage: true
+                        isImage: true,
+                        unix_time: unixTime
                     });
                     ws.send(payload);
-                    const now = new Date();
-                    const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
-                    addMessage(compressedBase64, 'outgoing', username, true, timeStr, 0);
+                    addMessage(compressedBase64, 'outgoing', username, true, unixTime, 0);
                 }
             };
             img.src = rawImageBase64;
@@ -222,11 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsDataURL(file);
     });
 
-    function formatTime(dateString) {
-        if (!dateString) return '';
-        // Dynamically align the generic String variable directly into ISO-8601 UTC framework.
-        const isoString = dateString.replace(' ', 'T') + 'Z';
-        const d = new Date(isoString);
+    function formatTime(timestampValue) {
+        if (!timestampValue) return '';
+        
+        let jsTimestamp;
+        // If it's a direct unix integer mathematical flag (like from TiDB or websocket)
+        if (!isNaN(timestampValue) && String(timestampValue).indexOf('-') === -1) {
+            jsTimestamp = parseInt(timestampValue) * 1000;
+        } else {
+            // Unlikely fallback if an old string timestamp comes through somehow
+            const isoString = String(timestampValue).replace(' ', 'T') + 'Z';
+            jsTimestamp = new Date(isoString).getTime();
+        }
+        
+        const d = new Date(jsTimestamp);
         let hours = d.getHours();
         let mins = d.getMinutes();
         const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -300,17 +309,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteBtn = document.getElementById('delete-account-btn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-            const confirmDelete = confirm('⚠️ Critical Action: Are you sure you want to completely delete your account AND permanently erase all your messages? This cannot be undone.');
-            if (confirmDelete) {
-                fetch('delete_account.php')
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            window.location.href = 'login.php';
-                        } else {
-                            alert('Server encountered an error while trying to process the deletion query.');
-                        }
-                    });
+            const pwd = prompt('⚠️ Critical Action: Enter your password to completely delete your account AND permanently erase all your messages. This cannot be undone.');
+            if (pwd !== null) {
+                if (pwd.trim() === '') {
+                    alert('Password cannot be empty.');
+                    return;
+                }
+                
+                fetch('delete_account.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.href = 'login.php';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => {
+                    alert('Server encountered a network error while trying to process the deletion query.');
+                });
             }
         });
     }
