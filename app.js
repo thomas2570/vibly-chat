@@ -177,28 +177,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+      // Image Upload Logic with HTML5 Canvas Compression
     imageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            const base64Image = event.target.result;
+            const rawImageBase64 = event.target.result;
             
-            if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
-                const payload = JSON.stringify({ 
-                    type: 'chat', 
-                    target: targetUser, 
-                    message: base64Image,
-                    isImage: true
-                });
-                ws.send(payload);
+            // Create an offscreen image to handle compression
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800; // Limit rendering width for massive speed improvement
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                const now = new Date();
-                const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
-                addMessage(base64Image, 'outgoing', username, true, timeStr, 0);
-            }
+                // Compress out into a fast lightweight JPEG Base64 container
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
+                    const payload = JSON.stringify({ 
+                        type: 'chat', 
+                        target: targetUser, 
+                        message: compressedBase64,
+                        isImage: true
+                    });
+                    ws.send(payload);
+                    const now = new Date();
+                    const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
+                    addMessage(compressedBase64, 'outgoing', username, true, timeStr, 0);
+                }
+            };
+            img.src = rawImageBase64;
             
+            // Clear input so same image can be picked again
             imageInput.value = '';
         };
         reader.readAsDataURL(file);
