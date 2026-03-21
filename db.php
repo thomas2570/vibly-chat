@@ -9,10 +9,16 @@ try {
     // Point directly to the secure Linux Server SSL Certificate path inside the Docker container
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::MYSQL_ATTR_SSL_CA => '/etc/ssl/certs/ca-certificates.crt',
+        PDO::MYSQL_ATTR_SSL_CA => file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : __DIR__ . '/cacert.pem',
         PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
     ];
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password, $options);
+    
+    // Auto-migrate database (Runs successfully on Render's Linux PHP environment)
+    try {
+        @$pdo->exec("ALTER TABLE messages ADD COLUMN is_read TINYINT(1) DEFAULT 0");
+    } catch(PDOException $e) {}
+    
 } catch(PDOException $e) {
     die("ERROR: Could not connect to database. " . $e->getMessage() . "<br>Did you run setup.php or start XAMPP MySQL?");
 }
