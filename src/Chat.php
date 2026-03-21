@@ -45,6 +45,37 @@ class Chat implements MessageComponentInterface {
             return;
         }
 
+        // Handle read receipts
+        if (isset($data['type']) && $data['type'] === 'mark_read') {
+            $senderUser = $data['target'] ?? ''; // the user whose messages were just read
+            $receiverUser = $from->username ?? '';
+
+            if ($senderUser && $receiverUser) {
+                try {
+                    $stmt = $this->pdo->prepare("UPDATE messages SET is_read = 1 WHERE sender = ? AND receiver = ? AND is_read = 0");
+                    $stmt->execute([$senderUser, $receiverUser]);
+                } catch (\PDOException $e) {
+                    $options = [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::MYSQL_ATTR_SSL_CA => file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : dirname(__DIR__) . '/cacert.pem',
+                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
+                    ];
+                    $this->pdo = new PDO("mysql:host=gateway01.ap-southeast-1.prod.aws.tidbcloud.com;port=4000;dbname=test", "2ss5xha7cGNrmKW.root", "yf5BJZ5I2yZVwxm7", $options);
+                    $stmt = $this->pdo->prepare("UPDATE messages SET is_read = 1 WHERE sender = ? AND receiver = ? AND is_read = 0");
+                    $stmt->execute([$senderUser, $receiverUser]);
+                }
+
+                if (isset($this->userConnections[$senderUser])) {
+                    $senderConn = $this->userConnections[$senderUser];
+                    $senderConn->send(json_encode([
+                        'type' => 'read_receipt',
+                        'target' => $receiverUser
+                    ]));
+                }
+            }
+            return;
+        }
+
         // Handle private chat messages
         if (isset($data['type']) && $data['type'] === 'chat') {
             $target = $data['target'] ?? '';
@@ -77,7 +108,9 @@ class Chat implements MessageComponentInterface {
                     'type'     => 'chat',
                     'sender'   => $sender,
                     'message'  => $message,
-                    'isImage'  => $isImage === 1
+                    'isImage'  => $isImage === 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'is_read'  => 0
                 ]);
                 $targetConn->send($payload);
                 echo "Private message from {$sender} to {$target}\n";

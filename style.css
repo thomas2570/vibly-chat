@@ -514,6 +514,32 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     animation: fadeIn 0.5s ease-out;
 }
+/* Meta Data & Read Receipts */
+.message-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 5px;
+    font-size: 0.65rem;
+    opacity: 0.8;
+}
+.outgoing .message-meta {
+    color: rgba(255, 255, 255, 0.9);
+}
+.incoming .message-meta {
+    color: var(--text-muted);
+}
+.receipt {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: -2px;
+    margin-right: 2px;
+}
+.receipt.seen {
+    color: #38bdf8;
+    text-shadow: 0 0 5px rgba(56, 189, 248, 0.4);
+}
 
 /* ---------------- Chat Input ---------------- */
 .chat-input-area {

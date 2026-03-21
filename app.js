@@ -17,13 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let onlineUsers = [];
 
     function connect() {
-        // Automatically determine if we are running locally on Windows or Live on Render
         let wsUrl = '';
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Local XAMPP Testing
             wsUrl = 'ws://localhost:8080';
         } else {
-            // Render / Cloud Deployment
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             wsUrl = protocol + '//' + window.location.host + '/ws';
         }
@@ -33,10 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ws.onopen = () => {
             statusEl.textContent = 'Connected';
             statusEl.className = 'status connected';
-            // Register session with WebSocket server
             ws.send(JSON.stringify({ type: 'auth', username: username }));
-            
-            // Load some users initially
             searchUsers('');
         };
 
@@ -48,12 +42,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     onlineUsers = data.users;
                     updateUserListIndicators();
                 } else if (data.type === 'chat') {
-                    // Only show message if we are actively chatting with the sender
                     if (data.sender === targetUser) {
-                        addMessage(data.message, 'incoming', data.sender, data.isImage);
+                        addMessage(data.message, 'incoming', data.sender, data.isImage, data.created_at, data.is_read);
+                        // Send read receipt actively
+                        ws.send(JSON.stringify({ type: 'mark_read', target: data.sender }));
                     } else {
-                        // Normally you'd want a notification badge here
                         console.log(`Unread message from ${data.sender}:`, data.message);
+                    }
+                } else if (data.type === 'read_receipt') {
+                    if (data.target === targetUser) {
+                        document.querySelectorAll('.message-wrapper.outgoing .receipt').forEach(el => {
+                            el.textContent = '✔✔';
+                            el.classList.add('seen');
+                        });
                     }
                 }
             } catch (e) {
@@ -86,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const li = document.createElement('li');
                     li.textContent = u.username;
                     
-                    // Add online dot if they are in the active connections array
                     if (onlineUsers.includes(u.username) && u.username !== username) {
                         const dot = document.createElement('span');
                         dot.className = 'online-dot';
@@ -104,34 +104,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateUserListIndicators() {
-        // Simple re-trigger of the search to redraw the dots instantly
         searchUsers(userSearch.value.trim());
     }
 
     function selectUser(selectedUsername, liElement) {
         targetUser = selectedUsername;
         
-        // Update UI selections
         document.querySelectorAll('.user-list li').forEach(el => el.classList.remove('active'));
         if (liElement) liElement.classList.add('active');
         
         chatTitle.textContent = selectedUsername;
-        
-        // Switch views and activate Mobile Chat overlay
         document.body.classList.add('chat-active');
         emptyState.style.display = 'none';
         messagesContainer.style.display = 'flex';
         chatInputArea.style.display = 'flex';
         
-        // Clear old messages and show loading state
         messagesContainer.innerHTML = '';
         addSystemMessage(`Loading chat history with ${selectedUsername}...`);
 
-        // Fetch offline messages from the database
         fetch('fetch_messages.php?target=' + encodeURIComponent(selectedUsername))
             .then(res => res.json())
             .then(messages => {
-                messagesContainer.innerHTML = ''; // Clear loading message
+                messagesContainer.innerHTML = ''; 
                 
                 if (messages.length === 0) {
                     addSystemMessage(`Started private chat with ${selectedUsername}`);
@@ -140,20 +134,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isOutgoing = (m.sender === username);
                         const type = isOutgoing ? 'outgoing' : 'incoming';
                         const isImage = parseInt(m.is_image) === 1;
-                        addMessage(m.message, type, m.sender, isImage);
+                        addMessage(m.message, type, m.sender, isImage, m.created_at, m.is_read);
                     });
+                }
+                
+                // Transmit read state immediately
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'mark_read', target: selectedUsername }));
                 }
             })
             .catch(err => {
                 messagesContainer.innerHTML = '';
                 addSystemMessage(`Started private chat with ${selectedUsername}`);
-                console.error('Failed to load history:', err);
             });
     }
 
     if (backBtn) {
         backBtn.addEventListener('click', () => {
             document.body.classList.remove('chat-active');
+            targetUser = null;
         });
     }
 
@@ -164,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessage() {
         const msg = messageInput.value.trim();
         if (msg && targetUser && ws && ws.readyState === WebSocket.OPEN) {
-            // Send payload for targeted routing
             const payload = JSON.stringify({ 
                 type: 'chat', 
                 target: targetUser, 
@@ -172,13 +170,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             ws.send(payload);
             
-            // Display our outgoing message
-            addMessage(msg, 'outgoing', username);
+            const now = new Date();
+            const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
+            addMessage(msg, 'outgoing', username, false, timeStr, 0);
             messageInput.value = '';
         }
     }
 
-    // Image Upload Logic via Base64 Reader
     imageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -195,16 +193,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     isImage: true
                 });
                 ws.send(payload);
-                addMessage(base64Image, 'outgoing', username, true);
+                
+                const now = new Date();
+                const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
+                addMessage(base64Image, 'outgoing', username, true, timeStr, 0);
             }
             
-            // Clear input so same image can be picked again
             imageInput.value = '';
         };
         reader.readAsDataURL(file);
     });
 
-    function addMessage(text, type, senderName = '', isImage = false) {
+    function formatTime(dateString) {
+        if (!dateString) return '';
+        const t = dateString.split(/[- :]/);
+        if (t.length < 5) return '';
+        const d = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]);
+        let hours = d.getHours();
+        let mins = d.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        mins = mins < 10 ? '0'+mins : mins;
+        return `${hours}:${mins} ${ampm}`;
+    }
+
+    function addMessage(text, type, senderName = '', isImage = false, timestamp = null, isRead = 0) {
         const msgWrapper = document.createElement('div');
         msgWrapper.classList.add('message-wrapper', type);
 
@@ -215,18 +228,35 @@ document.addEventListener('DOMContentLoaded', () => {
             msgWrapper.appendChild(nameEl);
         }
 
+        const contentWrapper = document.createElement('div');
+        
         if (isImage) {
             const imgEl = document.createElement('img');
             imgEl.src = text;
             imgEl.classList.add('message-image');
-            msgWrapper.appendChild(imgEl);
+            contentWrapper.appendChild(imgEl);
         } else {
-            const msgEl = document.createElement('div');
-            msgEl.classList.add('message');
-            msgEl.textContent = text;
-            msgWrapper.appendChild(msgEl);
+            contentWrapper.classList.add('message');
+            contentWrapper.textContent = text;
+        }
+
+        // Add Timestamp and Checkmarks
+        if (timestamp) {
+            const timeStr = formatTime(timestamp);
+            const metaEl = document.createElement('div');
+            metaEl.classList.add('message-meta');
+            
+            let metaHtml = `<span class="message-time">${timeStr}</span>`;
+            if (type === 'outgoing') {
+                const tickMark = (parseInt(isRead) === 1) ? '✔✔' : '✔';
+                const tickClass = (parseInt(isRead) === 1) ? 'receipt seen' : 'receipt';
+                metaHtml += `<span class="${tickClass}">${tickMark}</span>`;
+            }
+            metaEl.innerHTML = metaHtml;
+            contentWrapper.appendChild(metaEl);
         }
         
+        msgWrapper.appendChild(contentWrapper);
         messagesContainer.appendChild(msgWrapper);
         scrollToBottom();
     }
@@ -248,6 +278,5 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') sendMessage();
     });
 
-    // Initial connection
     connect();
 });
