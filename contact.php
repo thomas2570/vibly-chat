@@ -11,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (empty($problem)) {
         $error = "Please describe your problem.";
     } else {
-        // Change this to the owner's actual email address if desired
-        $to = "admin@example.com"; 
+        // Send problem reports to the owner's email address
+        $to = "thomasramesh449@gmail.com"; 
         $subject = "Vibly Problem Report from: $username";
         $message = "Username: $username\n\nProblem Recorded:\n$problem";
         $headers = "From: noreply@vibly-chat.onrender.com";
