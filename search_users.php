@@ -11,12 +11,31 @@ if (!isset($_SESSION['username'])) {
 header('Content-Type: application/json');
 
 $query = $_GET['q'] ?? '';
-if (strlen($query) < 1) {
-    echo json_encode([]);
-    exit;
-}
 
 try {
+    if (strlen($query) < 1) {
+        $currentUser = $_SESSION['username'];
+        $stmt = $pdo->prepare("
+            SELECT contact_user AS username FROM (
+                SELECT 
+                    CASE 
+                        WHEN sender = ? THEN receiver 
+                        ELSE sender 
+                    END AS contact_user,
+                    MAX(created_at) as last_msg_time
+                FROM messages 
+                WHERE sender = ? OR receiver = ?
+                GROUP BY contact_user
+            ) AS recent_chats
+            ORDER BY last_msg_time DESC
+            LIMIT 20
+        ");
+        $stmt->execute([$currentUser, $currentUser, $currentUser]);
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($users);
+        exit;
+    }
+
     // Search for users other than the currently logged in user
     $stmt = $pdo->prepare("SELECT username FROM chatbot WHERE username LIKE ? AND username != ? LIMIT 10");
     $stmt->execute(['%' . $query . '%', $_SESSION['username']]);
