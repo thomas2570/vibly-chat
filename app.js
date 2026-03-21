@@ -224,9 +224,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function formatTime(dateString) {
         if (!dateString) return '';
-        const t = dateString.split(/[- :]/);
-        if (t.length < 5) return '';
-        const d = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]);
+        // Dynamically align the generic String variable directly into ISO-8601 UTC framework.
+        const isoString = dateString.replace(' ', 'T') + 'Z';
+        const d = new Date(isoString);
         let hours = d.getHours();
         let mins = d.getMinutes();
         const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -295,6 +295,25 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
+
+    // Account Destruction Logic
+    const deleteBtn = document.getElementById('delete-account-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            const confirmDelete = confirm('⚠️ Critical Action: Are you sure you want to completely delete your account AND permanently erase all your messages? This cannot be undone.');
+            if (confirmDelete) {
+                fetch('delete_account.php')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            window.location.href = 'login.php';
+                        } else {
+                            alert('Server encountered an error while trying to process the deletion query.');
+                        }
+                    });
+            }
+        });
+    }
 
     connect();
 });

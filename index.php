@@ -32,7 +32,10 @@ if (!isset($_SESSION['username'])) {
             <div class="sidebar-footer" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                     <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
-                    <a href="logout.php" class="logout-link">Logout</a>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.8rem; transition: background 0.2s;">Delete</button>
+                        <a href="logout.php" class="logout-link">Logout</a>
+                    </div>
                 </div>
                 <div style="width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
                     Copyright &copy; 2026 Vibly | <a href="contact.php" style="color: inherit; text-decoration: underline;">Report a Problem</a>
