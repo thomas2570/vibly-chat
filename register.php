@@ -52,6 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 Already have an account? <a href="login.php">Login here</a>
             </div>
         </div>
+        
+        <!-- Copyright Footer -->
+        <div style="text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+            Copyright &copy; 2026 Vibly | <a href="contact.php" style="color: inherit; text-decoration: underline;">Contact Support</a>
+        </div>
     </div>
 </body>
 </html>

@@ -29,9 +29,14 @@ if (!isset($_SESSION['username'])) {
             <ul id="user-list" class="user-list">
                 <!-- Search results will populate here -->
             </ul>
-            <div class="sidebar-footer">
-                <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
-                <a href="logout.php" class="logout-link">Logout</a>
+            <div class="sidebar-footer" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
+                    <a href="logout.php" class="logout-link">Logout</a>
+                </div>
+                <div style="width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                    Copyright &copy; 2026 Vibly | <a href="contact.php" style="color: inherit; text-decoration: underline;">Report a Problem</a>
+                </div>
             </div>
         </aside>
 
