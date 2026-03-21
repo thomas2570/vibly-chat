@@ -73,6 +73,20 @@ if (!isset($_SESSION['username'])) {
         </div>
     </div>
 
+    <!-- Delete Account Modal -->
+    <div id="delete-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h2>Delete Account</h2>
+            <p><strong>Critical Action:</strong> Enter your password to completely delete your account. This will permanently erase you and your messages.</p>
+            <input type="password" id="delete-password-input" placeholder="Enter your password">
+            <div class="modal-actions">
+                <button id="cancel-delete-btn" class="cancel-btn">Cancel</button>
+                <button id="confirm-delete-btn" class="danger-btn">Delete Permanently</button>
+            </div>
+            <div id="delete-error-msg" class="error-msg" style="display: none; margin-top: 15px;"></div>
+        </div>
+    </div>
+
     <script>
         // Inject the PHP session username into a global JS variable securely
         const MY_USERNAME = <?php echo json_encode($_SESSION['username']); ?>;

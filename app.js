@@ -305,34 +305,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') sendMessage();
     });
 
-    // Account Destruction Logic
+    // Account Destruction Logic via Custom Modal
     const deleteBtn = document.getElementById('delete-account-btn');
-    if (deleteBtn) {
+    const deleteModal = document.getElementById('delete-modal');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const deletePasswordInput = document.getElementById('delete-password-input');
+    const deleteErrorMsg = document.getElementById('delete-error-msg');
+
+    if (deleteBtn && deleteModal) {
         deleteBtn.addEventListener('click', () => {
-            const pwd = prompt('⚠️ Critical Action: Enter your password to completely delete your account AND permanently erase all your messages. This cannot be undone.');
-            if (pwd !== null) {
-                if (pwd.trim() === '') {
-                    alert('Password cannot be empty.');
-                    return;
-                }
-                
-                fetch('delete_account.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: pwd })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        window.location.href = 'login.php';
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(err => {
-                    alert('Server encountered a network error while trying to process the deletion query.');
-                });
+            deleteModal.style.display = 'flex';
+            deletePasswordInput.value = '';
+            deleteErrorMsg.style.display = 'none';
+            deletePasswordInput.focus();
+        });
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteModal.style.display = 'none';
+        });
+
+        confirmDeleteBtn.addEventListener('click', () => {
+            const pwd = deletePasswordInput.value.trim();
+            if (pwd === '') {
+                deleteErrorMsg.textContent = 'Password cannot be empty.';
+                deleteErrorMsg.style.display = 'block';
+                return;
             }
+            
+            confirmDeleteBtn.textContent = 'Deleting...';
+            confirmDeleteBtn.disabled = true;
+
+            fetch('delete_account.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pwd })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = 'login.php';
+                } else {
+                    deleteErrorMsg.textContent = data.message;
+                    deleteErrorMsg.style.display = 'block';
+                    confirmDeleteBtn.textContent = 'Delete Permanently';
+                    confirmDeleteBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                deleteErrorMsg.textContent = 'Server network error occurred.';
+                deleteErrorMsg.style.display = 'block';
+                confirmDeleteBtn.textContent = 'Delete Permanently';
+                confirmDeleteBtn.disabled = false;
+            });
         });
     }
 
