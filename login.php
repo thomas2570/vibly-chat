@@ -37,9 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <?php if($error): ?><div class="error-msg"><?= htmlspecialchars($error) ?></div><?php endif; ?>
             <form method="POST" class="auth-form">
                 <input type="text" name="username" placeholder="Username" required autocomplete="off">
-                <input type="password" name="password" placeholder="Password" required>
+                <div style="position: relative; width: 100%; margin-bottom: 1rem;">
+                    <input type="password" id="login-password" name="password" placeholder="Password" required style="width: 100%; margin-bottom: 0; padding-right: 40px;">
+                    <span id="toggle-password" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.6; user-select: none;">👁️</span>
+                </div>
                 <button type="submit">Sign In</button>
             </form>
+            <script>
+                document.getElementById('toggle-password').addEventListener('click', function() {
+                    const pwd = document.getElementById('login-password');
+                    if (pwd.type === 'password') {
+                        pwd.type = 'text';
+                        this.textContent = '🙈';
+                        this.style.opacity = '1';
+                    } else {
+                        pwd.type = 'password';
+                        this.textContent = '👁️';
+                        this.style.opacity = '0.6';
+                    }
+                });
+            </script>
             <div class="auth-links">
                 Don't have an account? <a href="register.php">Create one</a>
             </div>
