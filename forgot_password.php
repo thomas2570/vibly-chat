@@ -7,6 +7,7 @@ $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
+    $isAjax = isset($_POST['ajax']) && $_POST['ajax'] == 1;
     
     // Check if email exists
     $stmt = $pdo->prepare("SELECT username FROM chatbot WHERE email = ?");
@@ -33,11 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (sendEmail($email, $subject, $body)) {
             $success = "A password reset link has been sent to your email address.";
+            if ($isAjax) { echo json_encode(['status' => 'success', 'message' => $success]); exit; }
         } else {
             $error = "Failed to send the email. Please contact support or ensure SMTP is correctly configured with OpenSSL enabled in PHP.";
+            if ($isAjax) { echo json_encode(['status' => 'error', 'message' => $error]); exit; }
         }
     } else {
         $error = "If this email exists in our system, a reset link will be sent."; // Vague for security
+        if ($isAjax) { echo json_encode(['status' => 'success', 'message' => $error]); exit; }
     }
 }
 ?>
@@ -54,17 +58,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="auth-box">
             <h1>Forgot Password</h1>
             <p>Enter your email to receive a reset link.</p>
-            <?php if ($error): ?><div class="error-msg"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-            <?php if ($success): ?><div style="color: #4ade80; background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; text-align: center;"><?= htmlspecialchars($success) ?></div><?php endif; ?>
+            <div id="feedback-msg">
+                <?php if ($error): ?><div class="error-msg"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+                <?php if ($success): ?><div style="color: #4ade80; background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; text-align: center;"><?= htmlspecialchars($success) ?></div><?php endif; ?>
+            </div>
             
-            <form method="POST" class="auth-form">
-                <input type="email" name="email" placeholder="Your Email Address" required>
-                <button type="submit">Send Reset Link</button>
+            <form id="forgot-form" method="POST" class="auth-form">
+                <input type="email" id="reset-email" name="email" placeholder="Your Email Address" required>
+                <button type="submit" id="reset-btn" style="transition: opacity 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">Send Reset Link</button>
             </form>
             <div class="auth-links">
                 Remember your password? <a href="login.php">Back to Login</a>
             </div>
         </div>
     </div>
+    
+    <script>
+        document.getElementById('forgot-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('reset-btn');
+            var email = document.getElementById('reset-email').value;
+            var msgDiv = document.getElementById('feedback-msg');
+            
+            // Activate Loading State
+            btn.disabled = true;
+            btn.innerHTML = 'Sending Email... <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span>';
+            btn.style.opacity = '0.7';
+            msgDiv.style.display = 'none';
+            
+            var formData = new FormData();
+            formData.append('email', email);
+            formData.append('ajax', '1');
+            
+            fetch('forgot_password.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = 'Send Reset Link';
+                btn.style.opacity = '1';
+                msgDiv.style.display = 'block';
+                
+                if (data.status === 'success') {
+                    msgDiv.innerHTML = '<div style="color: #4ade80; background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; text-align: center;">' + data.message + '</div>';
+                    document.getElementById('reset-email').value = ''; // Clean input
+                } else {
+                    msgDiv.innerHTML = '<div class="error-msg">' + data.message + '</div>';
+                }
+            })
+            .catch(e => {
+                btn.disabled = false;
+                btn.innerHTML = 'Send Reset Link';
+                btn.style.opacity = '1';
+                msgDiv.style.display = 'block';
+                msgDiv.innerHTML = '<div class="error-msg">A secure network error occurred while connecting to SMTP. Please try again.</div>';
+            });
+        });
+    </script>
+    <style>
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
 </body>
 </html>
