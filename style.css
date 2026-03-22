@@ -873,4 +873,4 @@ body {
 
 @media (max-width: 800px) { .global-profile-btn { top: 1rem; right: 1.25rem; width: 38px; height: 38px; font-size: 1.1rem; } }
 
-@media (max-width: 800px) { .global-profile-btn { display: flex !important; } .sidebar-footer { display: none !important; } } .global-profile-btn { display: none; }
+@media (max-width: 800px) { .global-profile-btn { display: flex !important; } .sidebar-footer { display: none !important; } }

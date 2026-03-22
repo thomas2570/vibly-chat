@@ -43,10 +43,8 @@ if (!isset($_SESSION['username'])) {
                         <img id="my-profile-img" src="uploads/default.png" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background-color: var(--border-color);">
                         <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="icon-btn trigger-profile-modal" title="Profile Settings" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">⚙️</button>
-                        <button id="delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.8rem; transition: background 0.2s;">Delete</button>
-                        <a href="logout.php" class="logout-link">Logout</a>
+                    <div style="display: none; gap: 8px;">
+                        <!-- Buttons moved to modal -->
                     </div>
                 </div>
                 <div style="width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
@@ -62,7 +60,7 @@ if (!isset($_SESSION['username'])) {
                     <button id="back-btn" class="mobile-only" style="display: none;">⬅️</button>
                     <div>
                         <h1 id="chat-title">Select a conversation</h1>
-                        <span id="connection-status" class="status disconnected">Disconnected</span>
+                        <span id="connection-status" class="status disconnected" style="display: none;">Disconnected</span>
                     </div>
                 </div>
             </header>
