@@ -13,6 +13,8 @@ header('Content-Type: application/json');
 $query = $_GET['q'] ?? '';
 
 try {
+    $currentUser = $_SESSION['username'];
+    
     if (strlen($query) < 1) {
         $stmt = $pdo->prepare("
             SELECT recent_chats.contact_user AS username, c.profile_image,
@@ -39,8 +41,15 @@ try {
     }
 
     // Search for users other than the currently logged in user
-    $stmt = $pdo->prepare("SELECT username, profile_image FROM chatbot WHERE username LIKE ? AND username != ? LIMIT 10");
-    $stmt->execute(['%' . $query . '%', $_SESSION['username']]);
+    $searchPattern = '%' . $query . '%';
+    $stmt = $pdo->prepare("
+        SELECT username, profile_image,
+               (SELECT COUNT(*) FROM messages WHERE sender = chatbot.username AND receiver = ? AND is_read = 0) AS unread_count
+        FROM chatbot 
+        WHERE username LIKE ? AND username != ? 
+        LIMIT 10
+    ");
+    $stmt->execute([$currentUser, $searchPattern, $currentUser]);
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode($users);
