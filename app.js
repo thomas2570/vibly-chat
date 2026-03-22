@@ -17,6 +17,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let onlineUsers = [];
     const profileCache = {}; // Cache for friend profile pictures
     
+    let lastRenderedDate = null;
+    
+    function getJsTimestamp(timestampValue) {
+        if (!timestampValue) return Date.now();
+        if (!isNaN(timestampValue) && String(timestampValue).indexOf('-') === -1) {
+            return parseInt(timestampValue) * 1000;
+        }
+        const isoString = String(timestampValue).replace(' ', 'T') + 'Z';
+        return new Date(isoString).getTime();
+    }
+
+    function formatDateDivider(jsTimestamp) {
+        const date = new Date(jsTimestamp);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+    }
+    
     let editingMessageId = null;
     let editingMessageSpan = null;
     let editingMessageWrapper = null;
@@ -175,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesContainer.style.display = 'flex';
         chatInputArea.style.display = 'flex';
         
+        lastRenderedDate = null;
         messagesContainer.innerHTML = '';
         addSystemMessage(`Loading chat history with ${selectedUsername}...`);
 
@@ -312,16 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatTime(timestampValue) {
         if (!timestampValue) return '';
         
-        let jsTimestamp;
-        // If it's a direct unix integer mathematical flag (like from TiDB or websocket)
-        if (!isNaN(timestampValue) && String(timestampValue).indexOf('-') === -1) {
-            jsTimestamp = parseInt(timestampValue) * 1000;
-        } else {
-            // Unlikely fallback if an old string timestamp comes through somehow
-            const isoString = String(timestampValue).replace(' ', 'T') + 'Z';
-            jsTimestamp = new Date(isoString).getTime();
-        }
-        
+        const jsTimestamp = getJsTimestamp(timestampValue);
         const d = new Date(jsTimestamp);
         let hours = d.getHours();
         let mins = d.getMinutes();
@@ -332,6 +350,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addMessage(text, type, senderName = '', isImage = false, timestamp = null, isRead = 0, dbId = null, tempId = null, isEdited = false) {
+        if (timestamp) {
+            const jsTs = getJsTimestamp(timestamp);
+            const dateStr = formatDateDivider(jsTs);
+            if (dateStr !== lastRenderedDate) {
+                const wrap = document.createElement('div');
+                wrap.className = 'date-divider-wrapper';
+                const div = document.createElement('div');
+                div.className = 'date-divider';
+                div.textContent = dateStr;
+                wrap.appendChild(div);
+                messagesContainer.appendChild(wrap);
+                lastRenderedDate = dateStr;
+            }
+        }
+        
         const msgWrapper = document.createElement('div');
         msgWrapper.classList.add('message-wrapper', type);
         if (dbId) msgWrapper.dataset.id = dbId;
