@@ -57,8 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 });
             </script>
-            <div class="auth-links">
-                Don't have an account? <a href="register.php">Create one</a>
+            <div class="auth-links" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                <a href="forgot_password.php" style="font-size: 0.9rem;">Forgot Password?</a>
+                <span>Don't have an account? <a href="register.php">Create one</a></span>
             </div>
         </div>
         

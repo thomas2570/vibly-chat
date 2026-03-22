@@ -31,8 +31,12 @@ if (!isset($_SESSION['username'])) {
             </ul>
             <div class="sidebar-footer" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                    <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <img id="my-profile-img" src="uploads/default.png" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background-color: var(--border-color);">
+                        <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
+                    </div>
                     <div style="display: flex; gap: 8px;">
+                        <button id="profile-settings-btn" class="icon-btn" title="Profile Settings" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">⚙️</button>
                         <button id="delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.8rem; transition: background 0.2s;">Delete</button>
                         <a href="logout.php" class="logout-link">Logout</a>
                     </div>
@@ -84,6 +88,39 @@ if (!isset($_SESSION['username'])) {
                 <button id="confirm-delete-btn" class="danger-btn">Delete Permanently</button>
             </div>
             <div id="delete-error-msg" class="error-msg" style="display: none; margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- Profile Settings Modal -->
+    <div id="profile-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h2>Profile Settings</h2>
+            <form id="profile-form" enctype="multipart/form-data">
+                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+                    <img id="preview-profile-img" src="uploads/default.png" alt="Profile" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid var(--primary-color);">
+                    <input type="file" id="profile-image-input" name="profile_image" accept="image/*" style="font-size: 0.8rem;">
+                </div>
+                
+                <label style="display: block; text-align: left; font-size: 0.85rem; margin-bottom: 4px; color: var(--text-muted);">Full Name</label>
+                <input type="text" id="profile-fullname" name="full_name" placeholder="John Doe">
+                
+                <label style="display: block; text-align: left; font-size: 0.85rem; margin-bottom: 4px; color: var(--text-muted);">Email Address (For Password Reset)</label>
+                <input type="email" id="profile-email" name="email" placeholder="john@example.com">
+                
+                <label style="display: block; text-align: left; font-size: 0.85rem; margin-bottom: 4px; color: var(--text-muted);">Gender</label>
+                <select id="profile-gender" name="gender" style="width: 100%; padding: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0, 0, 0, 0.2); color: var(--text-light); font-family: 'Inter', sans-serif;">
+                    <option value="" style="color: black;">Prefer not to say</option>
+                    <option value="Male" style="color: black;">Male</option>
+                    <option value="Female" style="color: black;">Female</option>
+                    <option value="Other" style="color: black;">Other</option>
+                </select>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-profile-btn" class="cancel-btn">Cancel</button>
+                    <button type="submit" id="save-profile-btn" style="background: var(--primary-color); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+            <div id="profile-status-msg" style="display: none; margin-top: 15px; font-size: 0.9rem; text-align: center;"></div>
         </div>
     </div>
 

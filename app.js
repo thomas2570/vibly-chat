@@ -307,11 +307,86 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Account Destruction Logic via Custom Modal
     const deleteBtn = document.getElementById('delete-account-btn');
-    const deleteModal = document.getElementById('delete-modal');
-    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-    const deletePasswordInput = document.getElementById('delete-password-input');
-    const deleteErrorMsg = document.getElementById('delete-error-msg');
+const deleteModal = document.getElementById('delete-modal');
+const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+const deletePasswordInput = document.getElementById('delete-password-input');
+const deleteErrorMsg = document.getElementById('delete-error-msg');
+
+// Profile modal elements
+const profileBtn = document.getElementById('profile-settings-btn');
+const profileModal = document.getElementById('profile-modal');
+const cancelProfileBtn = document.getElementById('cancel-profile-btn');
+const profileForm = document.getElementById('profile-form');
+const profileStatusMsg = document.getElementById('profile-status-msg');
+const myProfileImg = document.getElementById('my-profile-img');
+const profileImageInput = document.getElementById('profile-image-input');
+const previewProfileImg = document.getElementById('preview-profile-img');
+
+// Load initial profile data
+fetch('get_profile.php')
+    .then(res => res.json())
+    .then(data => {
+        if (data.profile_image) {
+            myProfileImg.src = 'uploads/' + data.profile_image;
+            previewProfileImg.src = 'uploads/' + data.profile_image;
+        }
+        if (data.full_name) document.getElementById('profile-fullname').value = data.full_name;
+        if (data.email) document.getElementById('profile-email').value = data.email;
+        if (data.gender) document.getElementById('profile-gender').value = data.gender;
+    });
+
+// Profile Modal Event Listeners
+profileBtn.addEventListener('click', () => {
+    profileModal.style.display = 'flex';
+    profileStatusMsg.style.display = 'none';
+});
+
+cancelProfileBtn.addEventListener('click', () => {
+    profileModal.style.display = 'none';
+});
+
+profileImageInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewProfileImg.src = e.target.result;
+        }
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+
+profileForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(profileForm);
+    
+    // Check if passwords are provided if we were doing password here, but we are not
+    fetch('update_profile.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            profileStatusMsg.style.color = '#4ade80';
+            profileStatusMsg.innerText = 'Profile updated successfully!';
+            profileStatusMsg.style.display = 'block';
+            if (data.profile_image) {
+                myProfileImg.src = 'uploads/' + data.profile_image;
+            }
+            setTimeout(() => { profileModal.style.display = 'none'; }, 1500);
+        } else {
+            profileStatusMsg.style.color = '#ef4444';
+            profileStatusMsg.innerText = data.error || 'Failed to update profile.';
+            profileStatusMsg.style.display = 'block';
+        }
+    })
+    .catch(err => {
+        profileStatusMsg.style.color = '#ef4444';
+        profileStatusMsg.innerText = 'Network error during save.';
+        profileStatusMsg.style.display = 'block';
+    });
+});
 
     if (deleteBtn && deleteModal) {
         deleteBtn.addEventListener('click', () => {
