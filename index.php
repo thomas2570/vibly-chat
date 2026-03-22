@@ -16,6 +16,14 @@ if (!isset($_SESSION['username'])) {
 </head>
 <body>
     <div class="app-container">
+        <!-- Global Profile Button (Top Right Corner) -->
+        <button class="global-profile-btn trigger-profile-modal" title="Profile Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </button>
+
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -36,7 +44,7 @@ if (!isset($_SESSION['username'])) {
                         <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button id="profile-settings-btn" class="icon-btn" title="Profile Settings" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">⚙️</button>
+                        <button class="icon-btn trigger-profile-modal" title="Profile Settings" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">⚙️</button>
                         <button id="delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.8rem; transition: background 0.2s;">Delete</button>
                         <a href="logout.php" class="logout-link">Logout</a>
                     </div>

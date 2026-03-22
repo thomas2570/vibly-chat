@@ -420,7 +420,7 @@ const deletePasswordInput = document.getElementById('delete-password-input');
 const deleteErrorMsg = document.getElementById('delete-error-msg');
 
 // Profile modal elements
-const profileBtn = document.getElementById('profile-settings-btn');
+const profileBtns = document.querySelectorAll('.trigger-profile-modal');
 const profileModal = document.getElementById('profile-modal');
 const cancelProfileBtn = document.getElementById('cancel-profile-btn');
 const profileForm = document.getElementById('profile-form');
@@ -443,9 +443,11 @@ fetch('get_profile.php')
     });
 
 // Profile Modal Event Listeners
-profileBtn.addEventListener('click', () => {
-    profileModal.style.display = 'flex';
-    profileStatusMsg.style.display = 'none';
+profileBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        profileModal.style.display = 'flex';
+        profileStatusMsg.style.display = 'none';
+    });
 });
 
 cancelProfileBtn.addEventListener('click', () => {
