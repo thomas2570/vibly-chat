@@ -127,9 +127,16 @@ if (!isset($_SESSION['username'])) {
                 </div>
                 
                 <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-                <div style="display: flex; gap: 10px; justify-content: space-between;">
-                    <button type="button" id="modal-delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.6rem; cursor: pointer; flex: 1; font-size: 0.85rem; transition: background 0.2s;">Delete Account</button>
-                    <a href="logout.php" class="cancel-btn" style="text-decoration: none; text-align: center; flex: 1; font-size: 0.85rem; display: flex; align-items: center; justify-content: center;">Logout</a>
+                <div style="display: flex; gap: 12px; justify-content: space-between;">
+                    <button type="button" id="modal-delete-account-btn" style="background: rgba(239, 68, 68, 0.05); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 0.8rem; cursor: pointer; flex: 1; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.borderColor='rgba(239, 68, 68, 0.4)';" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'; this.style.borderColor='rgba(239, 68, 68, 0.2)';">
+                        Delete
+                    </button>
+                    <a href="logout.php" style="background: var(--primary-gradient); color: white; border: none; border-radius: 12px; padding: 0.8rem; text-decoration: none; text-align: center; flex: 1; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(139, 92, 246, 0.5)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.3)';">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Logout
+                    </a>
                 </div>
             </form>
             <div id="profile-status-msg" style="display: none; margin-top: 15px; font-size: 0.9rem; text-align: center;"></div>
