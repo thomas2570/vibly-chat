@@ -45,12 +45,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (data.type === 'chat') {
                     if (data.sender === targetUser) {
                         const timestamp = data.unix_time || data.created_at || Math.floor(Date.now() / 1000);
-                        addMessage(data.message, 'incoming', data.sender, data.isImage, timestamp, data.is_read);
+                        addMessage(data.message, 'incoming', data.sender, data.isImage, timestamp, data.is_read, data.id);
                         // Send read receipt actively
                         ws.send(JSON.stringify({ type: 'mark_read', target: data.sender }));
                     } else {
                         console.log(`Unread message from ${data.sender}:`, data.message);
                     }
+                } else if (data.type === 'ack_message') {
+                    if (data.tempId && data.id) {
+                        const el = document.querySelector(`.message-wrapper[data-tempid="${data.tempId}"]`);
+                        if (el) {
+                            el.dataset.id = data.id;
+                            el.removeAttribute('data-tempid');
+                        }
+                    }
+                } else if (data.type === 'edit') {
+                    const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
+                    if (el) {
+                        const content = el.querySelector('.message');
+                        if (content) {
+                            content.textContent = data.message;
+                            el.classList.add('is-edited');
+                        }
+                    }
+                } else if (data.type === 'delete') {
+                    const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
+                    if (el) el.remove();
                 } else if (data.type === 'read_receipt') {
                     if (data.target === targetUser) {
                         document.querySelectorAll('.message-wrapper.outgoing .receipt').forEach(el => {
@@ -60,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } catch (e) {
-                console.error('Invalid message format:', event.data);
+                console.error('Invalid message format:', event.data, e);
             }
         };
 
@@ -136,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isOutgoing = (m.sender === username);
                         const type = isOutgoing ? 'outgoing' : 'incoming';
                         const isImage = parseInt(m.is_image) === 1;
-                        addMessage(m.message, type, m.sender, isImage, m.unix_time || m.created_at, m.is_read || 0);
+                        addMessage(m.message, type, m.sender, isImage, m.unix_time || m.created_at, m.is_read || 0, m.id, null, parseInt(m.is_edited) === 1);
                     });
                 }
                 
@@ -166,15 +186,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = messageInput.value.trim();
         if (msg && targetUser && ws && ws.readyState === WebSocket.OPEN) {
             const unixTime = Math.floor(Date.now() / 1000);
+            const tempId = 'temp_' + Date.now() + '_' + Math.floor(Math.random()*1000);
             const payload = JSON.stringify({ 
                 type: 'chat', 
                 target: targetUser, 
                 message: msg,
-                unix_time: unixTime 
+                unix_time: unixTime,
+                tempId: tempId
             });
             ws.send(payload);
             
-            addMessage(msg, 'outgoing', username, false, unixTime, 0);
+            addMessage(msg, 'outgoing', username, false, unixTime, 0, null, tempId);
             messageInput.value = '';
         }
     }
@@ -246,9 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${hours}:${mins} ${ampm}`;
     }
 
-    function addMessage(text, type, senderName = '', isImage = false, timestamp = null, isRead = 0) {
+    function addMessage(text, type, senderName = '', isImage = false, timestamp = null, isRead = 0, dbId = null, tempId = null, isEdited = false) {
         const msgWrapper = document.createElement('div');
         msgWrapper.classList.add('message-wrapper', type);
+        if (dbId) msgWrapper.dataset.id = dbId;
+        if (tempId) msgWrapper.dataset.tempid = tempId;
+        if (isEdited) msgWrapper.classList.add('is-edited');
 
         // Container for Avatar + Message for incoming
         const innerFlex = document.createElement('div');
@@ -315,10 +340,56 @@ document.addEventListener('DOMContentLoaded', () => {
             metaEl.innerHTML = metaHtml;
             contentWrapper.appendChild(metaEl);
         }
+
+        if (type === 'outgoing' && !isImage) {
+            const actionsEl = document.createElement('div');
+            actionsEl.className = 'msg-actions';
+            
+            const editBtn = document.createElement('button');
+            editBtn.innerHTML = '✎';
+            editBtn.title = 'Edit';
+            editBtn.onclick = () => {
+                const currentText = contentWrapper.querySelector('.message').textContent;
+                const newText = prompt('Edit message:', currentText);
+                if (newText && newText !== currentText && newText.trim() !== '') {
+                    const actualId = msgWrapper.dataset.id;
+                    if (actualId && ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'edit', id: actualId, message: newText.trim(), target: targetUser }));
+                        contentWrapper.querySelector('.message').textContent = newText.trim();
+                    } else if (!actualId) {
+                        alert("Message is still sending, please wait a moment.");
+                    }
+                }
+            };
+            
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '✕';
+            delBtn.title = 'Delete';
+            delBtn.onclick = () => {
+                if (confirm('Delete this message?')) {
+                    const actualId = msgWrapper.dataset.id;
+                    if (actualId && ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'delete', id: actualId, target: targetUser }));
+                        msgWrapper.remove();
+                    } else if (!actualId) {
+                        alert("Message is still sending, please wait a moment.");
+                    }
+                }
+            };
+            
+            actionsEl.appendChild(editBtn);
+            actionsEl.appendChild(delBtn);
+            contentWrapper.appendChild(actionsEl);
+        }
         
         msgContentCol.appendChild(contentWrapper);
-        innerFlex.appendChild(msgContentCol);
-        msgWrapper.appendChild(innerFlex);
+        if (type === 'incoming') {
+            innerFlex.appendChild(msgContentCol);
+            msgWrapper.appendChild(innerFlex);
+        } else {
+            msgWrapper.appendChild(msgContentCol);
+        }
+        
         messagesContainer.appendChild(msgWrapper);
         scrollToBottom();
     }

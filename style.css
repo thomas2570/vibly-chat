@@ -478,7 +478,7 @@ body {
 .message {
     padding: 1rem 1.35rem;
     line-height: 1.6;
-    font-size: 0.95rem;
+    font-size: 1.05rem; /* Increased font size */
     word-break: break-word;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     position: relative;
@@ -531,7 +531,8 @@ body {
     justify-content: flex-end;
     gap: 4px;
     margin-top: 5px;
-    font-size: 0.65rem;
+    margin-bottom: 2px;
+    font-size: 0.7rem;
     opacity: 0.8;
 }
 .outgoing .message-meta {
@@ -549,6 +550,38 @@ body {
 .receipt.seen {
     color: #38bdf8;
     text-shadow: 0 0 5px rgba(56, 189, 248, 0.4);
+}
+.msg-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+    opacity: 0.8;
+}
+.msg-actions button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+}
+.msg-actions button:hover {
+    background: rgba(255,255,255,0.25);
+    transform: scale(1.1);
+}
+.message-wrapper.is-edited .message::after {
+    content: " (edited)";
+    font-size: 0.75rem;
+    opacity: 0.6;
+    font-style: italic;
+    margin-left: 5px;
 }
 
 /* ---------------- Chat Input ---------------- */

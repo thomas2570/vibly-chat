@@ -16,6 +16,7 @@ try {
     
     // Auto-migrate database (Runs successfully on Render's Linux PHP environment)
     try { @$pdo->exec("ALTER TABLE messages ADD COLUMN is_read TINYINT(1) DEFAULT 0"); } catch(PDOException $e) {}
+    try { @$pdo->exec("ALTER TABLE messages ADD COLUMN is_edited TINYINT(1) DEFAULT 0"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN email VARCHAR(255) DEFAULT NULL"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN full_name VARCHAR(255) DEFAULT NULL"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN gender VARCHAR(50) DEFAULT NULL"); } catch(PDOException $e) {}

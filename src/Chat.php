@@ -83,27 +83,14 @@ class Chat implements MessageComponentInterface {
             $sender = $from->username ?? 'Unknown';
             $isImage = isset($data['isImage']) && $data['isImage'] ? 1 : 0;
 
-            // Send to target if online IMMEDIATELY (Reduces peer-to-peer latency from ~500ms -> 1ms)
-            if ($target && isset($this->userConnections[$target])) {
-                $targetConn = $this->userConnections[$target];
-                $payload = json_encode([
-                    'type'     => 'chat',
-                    'sender'   => $sender,
-                    'message'  => $message,
-                    'isImage'  => $isImage === 1,
-                    'unix_time'=> time()
-                ]);
-                $targetConn->send($payload);
-                echo "Private message from {$sender} to {$target}\n";
-            } else {
-                echo "Target {$target} is offline or not found\n";
-            }
-
-            // Save payload to Database robustly in the background (Catches TiDB idle drops)
+            // We will send to target AFTER we save to DB, so we get the accurate ID!
+            // Save payload to Database robustly in the background
+            $msgId = null;
             if ($target) {
                 try {
                     $stmt = $this->pdo->prepare("INSERT INTO messages (sender, receiver, message, is_image) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$sender, $target, $message, $isImage]);
+                    $msgId = $this->pdo->lastInsertId();
                 } catch (\PDOException $e) {
                     // Critical connection drop fallback
                     $options = [
@@ -114,8 +101,101 @@ class Chat implements MessageComponentInterface {
                     $this->pdo = new PDO("mysql:host=gateway01.ap-southeast-1.prod.aws.tidbcloud.com;port=4000;dbname=test", "2ss5xha7cGNrmKW.root", "yf5BJZ5I2yZVwxm7", $options);
                     $stmt = $this->pdo->prepare("INSERT INTO messages (sender, receiver, message, is_image) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$sender, $target, $message, $isImage]);
+                    $msgId = $this->pdo->lastInsertId();
                 }
+
+                // Send to Target
+                if (isset($this->userConnections[$target])) {
+                    $targetConn = $this->userConnections[$target];
+                    $payload = json_encode([
+                        'type'     => 'chat',
+                        'id'       => $msgId,
+                        'sender'   => $sender,
+                        'message'  => $message,
+                        'isImage'  => $isImage === 1,
+                        'unix_time'=> time()
+                    ]);
+                    $targetConn->send($payload);
+                    echo "Private message from {$sender} to {$target} (ID: {$msgId})\n";
+                }
+                
+                // Send Ack to Sender
+                $from->send(json_encode([
+                    'type'     => 'ack_message',
+                    'tempId'   => $data['tempId'] ?? null,
+                    'id'       => $msgId
+                ]));
             }
+            return;
+        }
+
+        // Handle Editing Message
+        if (isset($data['type']) && $data['type'] === 'edit') {
+            $msgId = $data['id'] ?? 0;
+            $newMessage = $data['message'] ?? '';
+            $sender = $from->username ?? '';
+            $target = $data['target'] ?? '';
+
+            if ($msgId && $newMessage && $sender) {
+                try {
+                    $stmt = $this->pdo->prepare("UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND sender = ?");
+                    $stmt->execute([$newMessage, $msgId, $sender]);
+                } catch (\PDOException $e) {
+                    $this->pdo = new PDO("mysql:host=gateway01.ap-southeast-1.prod.aws.tidbcloud.com;port=4000;dbname=test", "2ss5xha7cGNrmKW.root", "yf5BJZ5I2yZVwxm7", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::MYSQL_ATTR_SSL_CA => dirname(__DIR__) . '/cacert.pem', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true]);
+                    $stmt = $this->pdo->prepare("UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND sender = ?");
+                    $stmt->execute([$newMessage, $msgId, $sender]);
+                }
+
+                $editPayload = json_encode([
+                    'type' => 'edit',
+                    'id' => $msgId,
+                    'message' => $newMessage,
+                    'target' => $target
+                ]);
+
+                // Broadcast to Target
+                if ($target && isset($this->userConnections[$target])) {
+                    $this->userConnections[$target]->send($editPayload);
+                }
+                // Broadcast confirmation to Sender
+                $from->send($editPayload);
+            }
+            return;
+        }
+
+        // Handle Deleting Message
+        if (isset($data['type']) && $data['type'] === 'delete') {
+            $msgId = $data['id'] ?? 0;
+            $sender = $from->username ?? '';
+            $target = $data['target'] ?? '';
+
+            if ($msgId && $sender) {
+                try {
+                    $stmt = $this->pdo->prepare("DELETE FROM messages WHERE id = ? AND sender = ?");
+                    $stmt->execute([$msgId, $sender]);
+                } catch (\PDOException $e) {
+                    $this->pdo = new PDO("mysql:host=gateway01.ap-southeast-1.prod.aws.tidbcloud.com;port=4000;dbname=test", "2ss5xha7cGNrmKW.root", "yf5BJZ5I2yZVwxm7", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::MYSQL_ATTR_SSL_CA => dirname(__DIR__) . '/cacert.pem', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true]);
+                    $stmt = $this->pdo->prepare("DELETE FROM messages WHERE id = ? AND sender = ?");
+                    $stmt->execute([$msgId, $sender]);
+                }
+
+                $deletePayload = json_encode([
+                    'type' => 'delete',
+                    'id' => $msgId,
+                    'target' => $target
+                ]);
+
+                // Broadcast to Target
+                if ($target && isset($this->userConnections[$target])) {
+                    $this->userConnections[$target]->send($deletePayload);
+                }
+                // Broadcast confirmation to Sender
+                $from->send($deletePayload);
+            }
+            return;
+        }
+
+
         }
     }
 
