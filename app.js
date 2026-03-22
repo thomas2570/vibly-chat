@@ -70,9 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (data.type === 'edit') {
                     const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
                     if (el) {
-                        const content = el.querySelector('.message');
-                        if (content) {
-                            content.textContent = data.message;
+                        const msgSpan = el.querySelector('.msg-text');
+                        if (msgSpan) {
+                            msgSpan.textContent = data.message;
                             el.classList.add('is-edited');
                         }
                     }
@@ -336,7 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
             contentWrapper.appendChild(imgEl);
         } else {
             contentWrapper.classList.add('message');
-            contentWrapper.textContent = text;
+            const txtNode = document.createElement('span');
+            txtNode.className = 'msg-text';
+            txtNode.textContent = text;
+            contentWrapper.appendChild(txtNode);
         }
 
         // Add Timestamp and Checkmarks
@@ -363,13 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
             editBtn.innerHTML = '✎';
             editBtn.title = 'Edit';
             editBtn.onclick = () => {
-                const currentText = contentWrapper.querySelector('.message').textContent;
+                const msgSpan = contentWrapper.querySelector('.msg-text');
+                const currentText = msgSpan ? msgSpan.textContent : '';
                 const newText = prompt('Edit message:', currentText);
                 if (newText && newText !== currentText && newText.trim() !== '') {
                     const actualId = msgWrapper.dataset.id;
                     if (actualId && ws && ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'edit', id: actualId, message: newText.trim(), target: targetUser }));
-                        contentWrapper.querySelector('.message').textContent = newText.trim();
+                        if (msgSpan) msgSpan.textContent = newText.trim();
+                        msgWrapper.classList.add('is-edited');
                     } else if (!actualId) {
                         alert("Message is still sending, please wait a moment.");
                     }
