@@ -137,6 +137,21 @@ class Chat implements MessageComponentInterface {
             $target = $data['target'] ?? '';
 
             if ($msgId && $newMessage && $sender) {
+                // Verify 2-minute time limit
+                $stmt = $this->pdo->prepare("SELECT created_at FROM messages WHERE id = ? AND sender = ?");
+                $stmt->execute([$msgId, $sender]);
+                $msgRow = $stmt->fetch();
+                
+                if ($msgRow) {
+                    $createdAt = strtotime($msgRow['created_at']);
+                    if (time() - $createdAt > 120) {
+                        $from->send(json_encode(['type' => 'error', 'message' => 'Edit time limit (2 mins) expired']));
+                        return;
+                    }
+                } else {
+                    return;
+                }
+
                 try {
                     $stmt = $this->pdo->prepare("UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND sender = ?");
                     $stmt->execute([$newMessage, $msgId, $sender]);

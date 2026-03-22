@@ -61,7 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Send read receipt actively
                         ws.send(JSON.stringify({ type: 'mark_read', target: data.sender }));
                     } else {
-                        console.log(`Unread message from ${data.sender}:`, data.message);
+                        let badge = document.querySelector(`.unread-badge[data-user="${data.sender}"]`);
+                        if (badge) {
+                            badge.style.display = 'inline-block';
+                            badge.textContent = parseInt(badge.textContent || '0') + 1;
+                            badge.style.marginLeft = 'auto';
+                        } else {
+                            searchUsers(document.getElementById('user-search').value.trim()); 
+                        }
                     }
                 } else if (data.type === 'ack_message') {
                     if (data.tempId && data.id) {
@@ -127,10 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isOnline = (onlineUsers.includes(u.username) && u.username !== username);
                     const dotHtml = isOnline ? `<span class="online-dot" style="position:static; margin-left:auto; transform:none;"></span>` : '';
                     
+                    const unreadCount = parseInt(u.unread_count || '0');
+                    const badgeHtml = `<span class="unread-badge" data-user="${u.username}" style="${unreadCount > 0 ? 'display:inline-block;' : 'display:none;'} margin-left: ${isOnline ? '5px' : 'auto'};">${unreadCount}</span>`;
+
                     li.innerHTML = `
                         <img src="${avatarSrc}" onerror="this.src='${DEFAULT_AVATAR}'" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
                         <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${u.username}</span>
                         ${dotHtml}
+                        ${badgeHtml}
                     `;
                     
                     if (u.username === targetUser) {
@@ -154,6 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.querySelectorAll('.user-list li').forEach(el => el.classList.remove('active'));
         if (liElement) liElement.classList.add('active');
+        
+        let badge = document.querySelector(`.unread-badge[data-user="${selectedUsername}"]`);
+        if (badge) badge.style.display = 'none';
         
         chatTitle.textContent = selectedUsername;
         document.body.classList.add('chat-active');
@@ -397,50 +411,70 @@ document.addEventListener('DOMContentLoaded', () => {
             const actionsEl = document.createElement('div');
             actionsEl.className = 'msg-actions';
             
-            const editBtn = document.createElement('button');
-            editBtn.innerHTML = '✎';
-            editBtn.title = 'Edit';
-            editBtn.onclick = () => {
-                const actualId = msgWrapper.dataset.id;
-                if (!actualId) {
-                    alert("Message is still sending, please wait a moment.");
-                    return;
+            let canEdit = true;
+            if (timestamp) {
+                const currentTime = Math.floor(Date.now() / 1000);
+                if (currentTime - timestamp > 120) {
+                    canEdit = false;
                 }
-                
-                const msgSpan = contentWrapper.querySelector('.msg-text');
-                const currentText = msgSpan ? msgSpan.textContent : '';
-                
-                messageInput.value = currentText;
-                messageInput.focus();
-                
-                editingMessageId = actualId;
-                editingMessageSpan = msgSpan;
-                editingMessageWrapper = msgWrapper;
-                
-                sendBtn.textContent = 'Save';
-                sendBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                
-                let cancelEditBtn = document.getElementById('cancel-edit-btn');
-                if (!cancelEditBtn) {
-                    cancelEditBtn = document.createElement('button');
-                    cancelEditBtn.id = 'cancel-edit-btn';
-                    cancelEditBtn.innerHTML = '✕';
-                    cancelEditBtn.title = 'Cancel Edit';
-                    cancelEditBtn.style.background = 'rgba(239, 68, 68, 0.15)';
-                    cancelEditBtn.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-                    cancelEditBtn.style.color = '#fca5a5';
-                    cancelEditBtn.style.padding = '0 15px';
-                    cancelEditBtn.style.borderRadius = '28px';
-                    cancelEditBtn.style.cursor = 'pointer';
-                    cancelEditBtn.style.marginLeft = '5px';
-                    cancelEditBtn.style.marginRight = '5px';
-                    cancelEditBtn.onclick = cancelEditMode;
+            }
+
+            if (canEdit) {
+                const editBtn = document.createElement('button');
+                editBtn.innerHTML = '✎';
+                editBtn.title = 'Edit';
+                editBtn.onclick = () => {
+                    const actualId = msgWrapper.dataset.id;
+                    if (!actualId) {
+                        alert("Message is still sending, please wait a moment.");
+                        return;
+                    }
                     
-                    const chatInputArea = document.getElementById('chat-input-area');
-                    chatInputArea.insertBefore(cancelEditBtn, sendBtn);
+                    const msgSpan = contentWrapper.querySelector('.msg-text');
+                    const currentText = msgSpan ? msgSpan.textContent : '';
+                    
+                    messageInput.value = currentText;
+                    messageInput.focus();
+                    
+                    editingMessageId = actualId;
+                    editingMessageSpan = msgSpan;
+                    editingMessageWrapper = msgWrapper;
+                    
+                    sendBtn.textContent = 'Save';
+                    sendBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    
+                    let cancelEditBtn = document.getElementById('cancel-edit-btn');
+                    if (!cancelEditBtn) {
+                        cancelEditBtn = document.createElement('button');
+                        cancelEditBtn.id = 'cancel-edit-btn';
+                        cancelEditBtn.innerHTML = '✕';
+                        cancelEditBtn.title = 'Cancel Edit';
+                        cancelEditBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+                        cancelEditBtn.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                        cancelEditBtn.style.color = '#fca5a5';
+                        cancelEditBtn.style.padding = '0 15px';
+                        cancelEditBtn.style.borderRadius = '28px';
+                        cancelEditBtn.style.cursor = 'pointer';
+                        cancelEditBtn.style.marginLeft = '5px';
+                        cancelEditBtn.style.marginRight = '5px';
+                        cancelEditBtn.onclick = cancelEditMode;
+                        
+                        const chatInputArea = document.getElementById('chat-input-area');
+                        chatInputArea.insertBefore(cancelEditBtn, sendBtn);
+                    }
+                    cancelEditBtn.style.display = 'block';
+                };
+                actionsEl.appendChild(editBtn);
+                
+                if (timestamp) {
+                    const timeRemaining = 120 - (Math.floor(Date.now() / 1000) - timestamp);
+                    if (timeRemaining > 0) {
+                        setTimeout(() => {
+                            if (editBtn && editBtn.parentNode) editBtn.remove();
+                        }, timeRemaining * 1000);
+                    }
                 }
-                cancelEditBtn.style.display = 'block';
-            };
+            }
             
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '✕';
@@ -457,7 +491,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
             
-            actionsEl.appendChild(editBtn);
             actionsEl.appendChild(delBtn);
             contentWrapper.appendChild(actionsEl);
         }

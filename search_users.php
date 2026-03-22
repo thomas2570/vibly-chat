@@ -14,9 +14,9 @@ $query = $_GET['q'] ?? '';
 
 try {
     if (strlen($query) < 1) {
-        $currentUser = $_SESSION['username'];
         $stmt = $pdo->prepare("
-            SELECT recent_chats.contact_user AS username, c.profile_image 
+            SELECT recent_chats.contact_user AS username, c.profile_image,
+                   (SELECT COUNT(*) FROM messages WHERE sender = recent_chats.contact_user AND receiver = ? AND is_read = 0) AS unread_count
             FROM (
                 SELECT 
                     CASE 
@@ -32,7 +32,7 @@ try {
             ORDER BY last_msg_time DESC
             LIMIT 20
         ");
-        $stmt->execute([$currentUser, $currentUser, $currentUser]);
+        $stmt->execute([$currentUser, $currentUser, $currentUser, $currentUser]);
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode($users);
         exit;
