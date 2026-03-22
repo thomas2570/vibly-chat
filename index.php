@@ -127,6 +127,12 @@ if (!isset($_SESSION['username'])) {
                     <button type="button" id="cancel-profile-btn" class="cancel-btn">Cancel</button>
                     <button type="submit" id="save-profile-btn" style="background: var(--primary-color); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;">Save Changes</button>
                 </div>
+                
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+                <div style="display: flex; gap: 10px; justify-content: space-between;">
+                    <button type="button" id="modal-delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.6rem; cursor: pointer; flex: 1; font-size: 0.85rem; transition: background 0.2s;">Delete Account</button>
+                    <a href="logout.php" class="cancel-btn" style="text-decoration: none; text-align: center; flex: 1; font-size: 0.85rem; display: flex; align-items: center; justify-content: center;">Logout</a>
+                </div>
             </form>
             <div id="profile-status-msg" style="display: none; margin-top: 15px; font-size: 0.9rem; text-align: center;"></div>
         </div>

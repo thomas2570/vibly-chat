@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const dotHtml = isOnline ? `<span class="online-dot" style="position:static; margin-left:auto; transform:none;"></span>` : '';
                     
                     li.innerHTML = `
-                        <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#222; flex-shrink:0;">
+                        <img src="${avatarSrc}" onerror="this.src='${DEFAULT_AVATAR}'" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
                         <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${u.username}</span>
                         ${dotHtml}
                     `;
@@ -427,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Account Destruction Logic via Custom Modal
     const deleteBtn = document.getElementById('delete-account-btn');
+    const modalDeleteBtn = document.getElementById('modal-delete-account-btn');
 const deleteModal = document.getElementById('delete-modal');
 const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
 const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -532,14 +533,22 @@ profileForm.addEventListener('submit', (e) => {
     });
 });
 
-    if (deleteBtn && deleteModal) {
-        deleteBtn.addEventListener('click', () => {
-            deleteModal.style.display = 'flex';
-            deletePasswordInput.value = '';
-            deleteErrorMsg.style.display = 'none';
-            deletePasswordInput.focus();
-        });
+    const triggerDeleteModal = () => {
+        deleteModal.style.display = 'flex';
+        deletePasswordInput.value = '';
+        deleteErrorMsg.style.display = 'none';
+        deletePasswordInput.focus();
+        if (profileModal) profileModal.style.display = 'none'; // Ensure profile modal turns off if moving to delete
+    };
 
+    if (deleteBtn && deleteModal) {
+        deleteBtn.addEventListener('click', triggerDeleteModal);
+    }
+    if (modalDeleteBtn && deleteModal) {
+        modalDeleteBtn.addEventListener('click', triggerDeleteModal);
+    }
+    
+    if (cancelDeleteBtn && deleteModal) {
         cancelDeleteBtn.addEventListener('click', () => {
             deleteModal.style.display = 'none';
         });
