@@ -17,40 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gender = trim($_POST['gender'] ?? '');
     
     $profileImage = null;
-    $uploadDir = __DIR__ . '/uploads/';
-
-    // Ensure uploads directory exists
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
-
-    // Handle Image Upload
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-        $fileTmpPath = $_FILES['profile_image']['tmp_name'];
-        $fileName = $_FILES['profile_image']['name'];
-        $fileSize = $_FILES['profile_image']['size'];
-        $fileType = $_FILES['profile_image']['type'];
-        $fileNameCmps = explode(".", $fileName);
-        $fileExtension = strtolower(end($fileNameCmps));
-        
-        $allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
-        
-        if (in_array($fileExtension, $allowedExts)) {
-            $newFileName = md5(time() . $username) . '.' . $fileExtension;
-            $destPath = $uploadDir . $newFileName;
-            
-            if (move_uploaded_file($fileTmpPath, $destPath)) {
-                $profileImage = $newFileName;
-            } else {
-                $response['error'] = 'Error moving uploaded file.';
-                echo json_encode($response);
-                exit;
-            }
-        } else {
-            $response['error'] = 'Invalid file type. Only JPG, PNG, and GIF allowed.';
-            echo json_encode($response);
-            exit;
-        }
+    if (isset($_POST['profile_image_base64']) && !empty($_POST['profile_image_base64'])) {
+        $profileImage = $_POST['profile_image_base64'];
     }
 
     // Build the query

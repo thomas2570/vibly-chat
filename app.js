@@ -17,6 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let onlineUsers = [];
     const profileCache = {}; // Cache for friend profile pictures
 
+    const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzIyMiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iMzkiIHI9IjIyIiBmaWxsPSIjNTU1Ii8+PHBhdGggZD0iTTIyLDkwIGMyNSwtMzAgMzEsLTMwIDU2LDAiIGZpbGw9IiM1NTUiLz48L3N2Zz4=';
+    
+    function getAvatar(val) {
+        if (!val || val === 'default.png' || val === 'null') return DEFAULT_AVATAR;
+        if (val.startsWith('data:')) return val;
+        return 'uploads/' + val;
+    }
+
     function connect() {
         let wsUrl = '';
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -107,14 +115,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 users.forEach(u => {
                     const li = document.createElement('li');
-                    li.textContent = u.username;
+                    li.style.display = 'flex';
+                    li.style.alignItems = 'center';
+                    li.style.gap = '10px';
                     
-                    if (onlineUsers.includes(u.username) && u.username !== username) {
-                        const dot = document.createElement('span');
-                        dot.className = 'online-dot';
-                        li.appendChild(dot);
-                    }
-
+                    const avatarSrc = getAvatar(u.profile_image);
+                    const isOnline = (onlineUsers.includes(u.username) && u.username !== username);
+                    const dotHtml = isOnline ? `<span class="online-dot" style="position:static; margin-left:auto; transform:none;"></span>` : '';
+                    
+                    li.innerHTML = `
+                        <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#222; flex-shrink:0;">
+                        <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${u.username}</span>
+                        ${dotHtml}
+                    `;
+                    
                     if (u.username === targetUser) {
                         li.classList.add('active');
                     }
@@ -284,18 +298,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (type === 'incoming' && senderName) {
             const avatarImg = document.createElement('img');
             avatarImg.className = 'message-avatar';
-            avatarImg.src = 'uploads/default.png'; // Fallback immediately
+            avatarImg.src = DEFAULT_AVATAR; // Fallback immediately
             
             // Load from cache or fetch
             if (profileCache[senderName]) {
-                avatarImg.src = 'uploads/' + profileCache[senderName];
+                avatarImg.src = getAvatar(profileCache[senderName]);
             } else {
                 fetch(`get_profile.php?user=${encodeURIComponent(senderName)}`)
                     .then(r => r.json())
                     .then(d => {
                         if (d.profile_image) {
                             profileCache[senderName] = d.profile_image;
-                            avatarImg.src = 'uploads/' + d.profile_image;
+                            avatarImg.src = getAvatar(d.profile_image);
                         }
                     });
             }
@@ -434,8 +448,11 @@ fetch('get_profile.php')
     .then(res => res.json())
     .then(data => {
         if (data.profile_image) {
-            myProfileImg.src = 'uploads/' + data.profile_image;
-            previewProfileImg.src = 'uploads/' + data.profile_image;
+            myProfileImg.src = getAvatar(data.profile_image);
+            previewProfileImg.src = getAvatar(data.profile_image);
+        } else {
+            myProfileImg.src = DEFAULT_AVATAR;
+            previewProfileImg.src = DEFAULT_AVATAR;
         }
         if (data.full_name) document.getElementById('profile-fullname').value = data.full_name;
         if (data.email) document.getElementById('profile-email').value = data.email;
@@ -454,11 +471,24 @@ cancelProfileBtn.addEventListener('click', () => {
     profileModal.style.display = 'none';
 });
 
+let currentProfileBase64 = null;
 profileImageInput.addEventListener('change', function() {
     if (this.files && this.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            previewProfileImg.src = e.target.result;
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 250;
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                currentProfileBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                previewProfileImg.src = currentProfileBase64;
+            };
+            img.src = e.target.result;
         }
         reader.readAsDataURL(this.files[0]);
     }
@@ -467,6 +497,10 @@ profileImageInput.addEventListener('change', function() {
 profileForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(profileForm);
+    formData.delete('profile_image'); // Remove the raw file payload
+    if (currentProfileBase64) {
+        formData.append('profile_image_base64', currentProfileBase64);
+    }
     
     // Check if passwords are provided if we were doing password here, but we are not
     fetch('update_profile.php', {
@@ -480,7 +514,9 @@ profileForm.addEventListener('submit', (e) => {
             profileStatusMsg.innerText = 'Profile updated successfully!';
             profileStatusMsg.style.display = 'block';
             if (data.profile_image) {
-                myProfileImg.src = 'uploads/' + data.profile_image;
+                myProfileImg.src = getAvatar(data.profile_image);
+            } else if (currentProfileBase64) {
+                myProfileImg.src = currentProfileBase64;
             }
             setTimeout(() => { profileModal.style.display = 'none'; }, 1500);
         } else {

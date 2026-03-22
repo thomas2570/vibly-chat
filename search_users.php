@@ -16,7 +16,8 @@ try {
     if (strlen($query) < 1) {
         $currentUser = $_SESSION['username'];
         $stmt = $pdo->prepare("
-            SELECT contact_user AS username FROM (
+            SELECT recent_chats.contact_user AS username, c.profile_image 
+            FROM (
                 SELECT 
                     CASE 
                         WHEN sender = ? THEN receiver 
@@ -27,6 +28,7 @@ try {
                 WHERE sender = ? OR receiver = ?
                 GROUP BY contact_user
             ) AS recent_chats
+            LEFT JOIN chatbot c ON recent_chats.contact_user = c.username
             ORDER BY last_msg_time DESC
             LIMIT 20
         ");
@@ -37,7 +39,7 @@ try {
     }
 
     // Search for users other than the currently logged in user
-    $stmt = $pdo->prepare("SELECT username FROM chatbot WHERE username LIKE ? AND username != ? LIMIT 10");
+    $stmt = $pdo->prepare("SELECT username, profile_image FROM chatbot WHERE username LIKE ? AND username != ? LIMIT 10");
     $stmt->execute(['%' . $query . '%', $_SESSION['username']]);
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

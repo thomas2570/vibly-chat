@@ -21,6 +21,7 @@ try {
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN full_name VARCHAR(255) DEFAULT NULL"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN gender VARCHAR(50) DEFAULT NULL"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN profile_image VARCHAR(255) DEFAULT 'default.png'"); } catch(PDOException $e) {}
+    try { @$pdo->exec("ALTER TABLE chatbot MODIFY COLUMN profile_image LONGTEXT"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN reset_token VARCHAR(64) DEFAULT NULL"); } catch(PDOException $e) {}
     try { @$pdo->exec("ALTER TABLE chatbot ADD COLUMN reset_token_expires DATETIME DEFAULT NULL"); } catch(PDOException $e) {}
     
