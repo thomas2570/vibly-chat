@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let username = typeof MY_USERNAME !== 'undefined' ? MY_USERNAME : "Anonymous";
     let targetUser = null;
     let onlineUsers = [];
+    const profileCache = {}; // Cache for friend profile pictures
 
     function connect() {
         let wsUrl = '';
@@ -43,7 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateUserListIndicators();
                 } else if (data.type === 'chat') {
                     if (data.sender === targetUser) {
-                        addMessage(data.message, 'incoming', data.sender, data.isImage, data.created_at, data.is_read);
+                        const timestamp = data.unix_time || data.created_at || Math.floor(Date.now() / 1000);
+                        addMessage(data.message, 'incoming', data.sender, data.isImage, timestamp, data.is_read);
                         // Send read receipt actively
                         ws.send(JSON.stringify({ type: 'mark_read', target: data.sender }));
                     } else {
@@ -248,11 +250,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgWrapper = document.createElement('div');
         msgWrapper.classList.add('message-wrapper', type);
 
+        // Container for Avatar + Message for incoming
+        const innerFlex = document.createElement('div');
+        innerFlex.style.display = 'flex';
+        innerFlex.style.gap = '10px';
+        innerFlex.style.alignItems = 'flex-end';
+        
+        if (type === 'incoming' && senderName) {
+            const avatarImg = document.createElement('img');
+            avatarImg.className = 'message-avatar';
+            avatarImg.src = 'uploads/default.png'; // Fallback immediately
+            
+            // Load from cache or fetch
+            if (profileCache[senderName]) {
+                avatarImg.src = 'uploads/' + profileCache[senderName];
+            } else {
+                fetch(`get_profile.php?user=${encodeURIComponent(senderName)}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.profile_image) {
+                            profileCache[senderName] = d.profile_image;
+                            avatarImg.src = 'uploads/' + d.profile_image;
+                        }
+                    });
+            }
+            innerFlex.appendChild(avatarImg);
+        }
+
+        const msgContentCol = document.createElement('div');
+        msgContentCol.style.display = 'flex';
+        msgContentCol.style.flexDirection = 'column';
+
         if (type === 'incoming' && senderName) {
             const nameEl = document.createElement('div');
             nameEl.classList.add('sender-name');
             nameEl.textContent = senderName;
-            msgWrapper.appendChild(nameEl);
+            msgContentCol.appendChild(nameEl);
         }
 
         const contentWrapper = document.createElement('div');
@@ -283,7 +316,9 @@ document.addEventListener('DOMContentLoaded', () => {
             contentWrapper.appendChild(metaEl);
         }
         
-        msgWrapper.appendChild(contentWrapper);
+        msgContentCol.appendChild(contentWrapper);
+        innerFlex.appendChild(msgContentCol);
+        msgWrapper.appendChild(innerFlex);
         messagesContainer.appendChild(msgWrapper);
         scrollToBottom();
     }

@@ -9,6 +9,10 @@ if (!isset($_SESSION['username'])) {
 }
 
 $username = $_SESSION['username'];
+if (isset($_GET['user']) && !empty($_GET['user'])) {
+    $username = $_GET['user'];
+}
+
 $stmt = $pdo->prepare("SELECT full_name, email, gender, profile_image FROM chatbot WHERE username = ?");
 $stmt->execute([$username]);
 $profile = $stmt->fetch(PDO::FETCH_ASSOC);

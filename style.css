@@ -460,10 +460,20 @@ body {
 .sender-name {
     font-size: 0.75rem;
     color: var(--text-muted);
-    margin-bottom: 0.5rem;
-    padding: 0 0.5rem;
+    margin-bottom: 0.25rem;
+    padding: 0 0.25rem;
     font-weight: 500;
     letter-spacing: 0.3px;
+}
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: var(--border-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    margin-bottom: 8px; /* align roughly with the text line */
 }
 .message {
     padding: 1rem 1.35rem;
