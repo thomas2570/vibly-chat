@@ -5,12 +5,24 @@ use PHPMailer\PHPMailer\Exception;
 
 // If composer hasn't been re-run successfully yet, this might fail, so we wrap in try-catch
 function sendEmail($toEmail, $subject, $body) {
-    // Ensure Composer dependencies are loaded (this solves the Render cloud pathing issue)
+    // Try Composer autoloader first (Render Cloud deployment)
     if (file_exists(__DIR__ . '/vendor/autoload.php')) {
         require_once __DIR__ . '/vendor/autoload.php';
+    } 
+    // Fallback to manual local loading (XAMPP local testing)
+    elseif (file_exists(__DIR__ . '/PHPMailer/src/Exception.php')) {
+        require_once __DIR__ . '/PHPMailer/src/Exception.php';
+        require_once __DIR__ . '/PHPMailer/src/PHPMailer.php';
+        require_once __DIR__ . '/PHPMailer/src/SMTP.php';
+    } else {
+        error_log("PHPMailer not found. Cannot send email.");
+        return false;
     }
     
-    $mail = new PHPMailer(true);
+    // Safely attempt instantiation
+    if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+        return false; // Prevent fatal crashes if dependencies are simply missing
+    }
 
     try {
         // Server settings
