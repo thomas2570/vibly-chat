@@ -1,0 +1,21 @@
+<?php
+session_start();
+require 'db.php';
+
+if (!isset($_SESSION['username'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Not authenticated']);
+    exit;
+}
+
+$username = $_SESSION['username'];
+$stmt = $pdo->prepare("SELECT full_name, email, gender, profile_image FROM chatbot WHERE username = ?");
+$stmt->execute([$username]);
+$profile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$profile) {
+    echo json_encode(['error' => 'User not found']);
+} else {
+    echo json_encode($profile);
+}
+?>

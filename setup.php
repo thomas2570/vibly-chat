@@ -1,0 +1,42 @@
+<?php
+$host = 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com';
+$port = '4000';
+$dbname = 'test';
+$username = '2ss5xha7cGNrmKW.root';
+$password = 'yf5BJZ5I2yZVwxm7';
+
+try {
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::MYSQL_ATTR_SSL_CA => file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : __DIR__ . '/cacert.pem',
+        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
+    ];
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $username, $password, $options);
+    
+    echo "Connected to TiDB Serverless Cloud Database successfully.\n";
+    
+    $sql = "CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+$pdo->exec($sql);
+echo "Table 'users' created successfully or already exists.<br>";
+
+$sqlMessages = "CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender VARCHAR(50) NOT NULL,
+    receiver VARCHAR(50) NOT NULL,
+    message LONGTEXT,
+    is_image BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+$pdo->exec($sqlMessages);
+echo "Table 'messages' created successfully or already exists.<br>";
+    echo "Setup complete! You can now Register or Login on Vibly.\n";
+
+} catch(PDOException $e) {
+    die("ERROR: Could not complete setup. " . $e->getMessage() . "\nPlease ensure your MySQL credentials are correct.");
+}
+?>
