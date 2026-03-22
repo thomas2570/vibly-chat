@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let targetUser = null;
     let onlineUsers = [];
     const profileCache = {}; // Cache for friend profile pictures
+    
+    let editingMessageId = null;
+    let editingMessageSpan = null;
+    let editingMessageWrapper = null;
 
     const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzIyMiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iMzkiIHI9IjIyIiBmaWxsPSIjNTU1Ii8+PHBhdGggZD0iTTIyLDkwIGMyNSwtMzAgMzEsLTMwIDU2LDAiIGZpbGw9IiM1NTUiLz48L3N2Zz4=';
     
@@ -144,6 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function selectUser(selectedUsername, liElement) {
+        if (typeof cancelEditMode === 'function') cancelEditMode();
+        
         targetUser = selectedUsername;
         
         document.querySelectorAll('.user-list li').forEach(el => el.classList.remove('active'));
@@ -196,9 +202,38 @@ document.addEventListener('DOMContentLoaded', () => {
         searchUsers(e.target.value.trim());
     });
 
+    function cancelEditMode() {
+        editingMessageId = null;
+        editingMessageSpan = null;
+        editingMessageWrapper = null;
+        messageInput.value = '';
+        sendBtn.textContent = 'Send';
+        sendBtn.style.background = 'var(--primary-gradient)';
+        const btn = document.getElementById('cancel-edit-btn');
+        if (btn) btn.style.display = 'none';
+    }
+
     function sendMessage() {
         const msg = messageInput.value.trim();
-        if (msg && targetUser && ws && ws.readyState === WebSocket.OPEN) {
+        if (!msg) return;
+        
+        if (editingMessageId) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                if (editingMessageSpan && msg === editingMessageSpan.textContent) {
+                    cancelEditMode();
+                    return;
+                }
+                ws.send(JSON.stringify({ type: 'edit', id: editingMessageId, message: msg, target: targetUser }));
+                if (editingMessageSpan) editingMessageSpan.textContent = msg;
+                if (editingMessageWrapper) editingMessageWrapper.classList.add('is-edited');
+                cancelEditMode();
+            } else {
+                alert("Cannot connect to server to edit.");
+            }
+            return;
+        }
+
+        if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
             const unixTime = Math.floor(Date.now() / 1000);
             const tempId = 'temp_' + Date.now() + '_' + Math.floor(Math.random()*1000);
             const payload = JSON.stringify({ 
@@ -366,19 +401,45 @@ document.addEventListener('DOMContentLoaded', () => {
             editBtn.innerHTML = '✎';
             editBtn.title = 'Edit';
             editBtn.onclick = () => {
+                const actualId = msgWrapper.dataset.id;
+                if (!actualId) {
+                    alert("Message is still sending, please wait a moment.");
+                    return;
+                }
+                
                 const msgSpan = contentWrapper.querySelector('.msg-text');
                 const currentText = msgSpan ? msgSpan.textContent : '';
-                const newText = prompt('Edit message:', currentText);
-                if (newText && newText !== currentText && newText.trim() !== '') {
-                    const actualId = msgWrapper.dataset.id;
-                    if (actualId && ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'edit', id: actualId, message: newText.trim(), target: targetUser }));
-                        if (msgSpan) msgSpan.textContent = newText.trim();
-                        msgWrapper.classList.add('is-edited');
-                    } else if (!actualId) {
-                        alert("Message is still sending, please wait a moment.");
-                    }
+                
+                messageInput.value = currentText;
+                messageInput.focus();
+                
+                editingMessageId = actualId;
+                editingMessageSpan = msgSpan;
+                editingMessageWrapper = msgWrapper;
+                
+                sendBtn.textContent = 'Save';
+                sendBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                
+                let cancelEditBtn = document.getElementById('cancel-edit-btn');
+                if (!cancelEditBtn) {
+                    cancelEditBtn = document.createElement('button');
+                    cancelEditBtn.id = 'cancel-edit-btn';
+                    cancelEditBtn.innerHTML = '✕';
+                    cancelEditBtn.title = 'Cancel Edit';
+                    cancelEditBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+                    cancelEditBtn.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    cancelEditBtn.style.color = '#fca5a5';
+                    cancelEditBtn.style.padding = '0 15px';
+                    cancelEditBtn.style.borderRadius = '28px';
+                    cancelEditBtn.style.cursor = 'pointer';
+                    cancelEditBtn.style.marginLeft = '5px';
+                    cancelEditBtn.style.marginRight = '5px';
+                    cancelEditBtn.onclick = cancelEditMode;
+                    
+                    const chatInputArea = document.getElementById('chat-input-area');
+                    chatInputArea.insertBefore(cancelEditBtn, sendBtn);
                 }
+                cancelEditBtn.style.display = 'block';
             };
             
             const delBtn = document.createElement('button');
