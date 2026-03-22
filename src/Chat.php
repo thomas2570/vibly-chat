@@ -194,9 +194,6 @@ class Chat implements MessageComponentInterface {
             }
             return;
         }
-
-
-        }
     }
 
     public function onClose(ConnectionInterface $conn) {
