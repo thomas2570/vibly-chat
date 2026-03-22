@@ -21,6 +21,7 @@ function sendEmail($toEmail, $subject, $body) {
         $mail->Password   = 'orwn ndvp rqpq fhjg'; // Use the App Password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
+        $mail->Timeout    = 3; // Fast timeout for cloud firewalls (3s)
 
         // Recipients
         $mail->setFrom('thomasramesh@gmail.com', 'Vibly Support');
