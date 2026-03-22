@@ -54,22 +54,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Build the query
-    if ($profileImage) {
-        $stmt = $pdo->prepare("UPDATE chatbot SET full_name=?, email=?, gender=?, profile_image=? WHERE username=?");
-        $result = $stmt->execute([$fullName, $email, $gender, $profileImage, $username]);
-    } else {
-        $stmt = $pdo->prepare("UPDATE chatbot SET full_name=?, email=?, gender=? WHERE username=?");
-        $result = $stmt->execute([$fullName, $email, $gender, $username]);
-    }
-
-    if ($result) {
-        $response['success'] = true;
-        $response['error'] = '';
+    try {
         if ($profileImage) {
-            $response['profile_image'] = $profileImage;
+            $stmt = $pdo->prepare("UPDATE chatbot SET full_name=?, email=?, gender=?, profile_image=? WHERE username=?");
+            $result = $stmt->execute([$fullName, $email, $gender, $profileImage, $username]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE chatbot SET full_name=?, email=?, gender=? WHERE username=?");
+            $result = $stmt->execute([$fullName, $email, $gender, $username]);
         }
-    } else {
-        $response['error'] = 'Failed to update database.';
+
+        if ($result) {
+            $response['success'] = true;
+            $response['error'] = '';
+            if ($profileImage) {
+                $response['profile_image'] = $profileImage;
+            }
+        } else {
+            $response['error'] = 'Failed to update database (no rows affected or syntax error).';
+        }
+    } catch(PDOException $e) {
+        $response['error'] = 'DB Error: ' . $e->getMessage();
     }
 }
 
