@@ -1,42 +1,45 @@
-# 💬 Vibly Chat – Real-Time Chat Application
+# 💬 Vibly Chat – Real-Time Chat Application  
 
-🚀 A real-time chatting web application built using **PHP and MySQL**, where users can connect, communicate, and share messages and images seamlessly.
+🚀 A real-time chatting web application built using **PHP and MySQL**, where users can connect, communicate, and share messages and images seamlessly.  
 
 ---
 
-## 🔗 Live Demo
-👉 https://vibly-chat.onrender.com/login.php  
+## 🔗 Live Demo  
+👉 https://vibly-chat.vercel.app/  
 
-## 💻 GitHub Repository
+## 💻 GitHub Repository  
 👉 https://github.com/thomas2570/vibly-chat  
 
 ---
 
-## 📌 Features
+## 📌 Features  
 
-- 🔐 User Registration & Login (Username + Password)
-- 🔎 Search users by username
-- 💬 Real-time messaging system
-- 🖼️ Send images and text messages
-- 🗄️ Database integration using MySQL
-- 🎯 Simple and user-friendly interface
+- 🔐 User Registration & Login (Username + Password)  
+- 🔎 Search users by username  
+- 💬 One-to-one real-time messaging  
+- 🖼️ Send images and text messages  
+- 🗄️ MySQL database integration  
+- ⚡ Fast and simple UI  
+- 🌐 Fully deployed web application  
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack  
 
 - **Frontend:** HTML, CSS, JavaScript  
 - **Backend:** PHP  
 - **Database:** MySQL (phpMyAdmin)  
-- **Hosting:** Render  
+- **Hosting:** Vercel / Render  
 - **Containerization:** Docker  
 - **Scripting:** Batchfile  
 
 ---
 
-## ⚙️ Installation & Setup
+## ⚙️ Installation & Setup  
 
-### 1️⃣ Clone the repository
+Follow these steps to run the project locally 👇  
+
+### 1️⃣ Clone the Repository  
 ```bash
 git clone https://github.com/thomas2570/vibly-chat.git
 cd vibly-chat
