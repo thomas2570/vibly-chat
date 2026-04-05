@@ -1,6 +1,6 @@
 <?php
-session_start();
-$username = $_SESSION['username'] ?? 'Guest';
+require 'auth.php';
+$username = auth_user() ?? 'Guest';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,7 +8,7 @@ $username = $_SESSION['username'] ?? 'Guest';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Support - Vibly</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -33,7 +33,7 @@ $username = $_SESSION['username'] ?? 'Guest';
                 <button type="submit" id="submit-btn" style="margin-top: 0;">Send Report</button>
             </form>
             <div class="auth-links" style="margin-top: 1.5rem;">
-                <a href="index.php">← Back to Chat</a>
+                <a href="/index">← Back to Chat</a>
             </div>
         </div>
         

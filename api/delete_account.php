@@ -1,8 +1,9 @@
 <?php
-session_start();
+require 'auth.php';
 require 'db.php';
 
-if (!isset($_SESSION['username'])) {
+$user = auth_user();
+if (!$user) {
     http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized entry detected.']);
     exit;
@@ -18,7 +19,6 @@ if (empty($password)) {
     exit;
 }
 
-$user = $_SESSION['username'];
 
 try {
     // 1. Pass the execution password securely through BCRYPT validation against the chatbot table architecture
@@ -40,7 +40,7 @@ try {
     $stmtMsg->execute([$user, $user]);
 
     // Break temporal cache mappings securely
-    session_destroy();
+    auth_logout();
     echo json_encode(['status' => 'success']);
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

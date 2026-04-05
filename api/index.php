@@ -1,9 +1,6 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
+require 'auth.php';
+$current_user = auth_require();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,7 +8,7 @@ if (!isset($_SESSION['username'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibly</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -41,14 +38,14 @@ if (!isset($_SESSION['username'])) {
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <img id="my-profile-img" src="uploads/default.png" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background-color: var(--border-color);">
-                        <span class="logged-in-user">Me: <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></span>
+                        <span class="logged-in-user">Me: <strong><?= htmlspecialchars($current_user) ?></strong></span>
                     </div>
                     <div style="display: none; gap: 8px;">
                         <!-- Buttons moved to modal -->
                     </div>
                 </div>
                 <div style="width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                    Copyright &copy; 2026 Vibly | <a href="contact.php" style="color: inherit; text-decoration: underline;">Report a Problem</a>
+                    Copyright &copy; 2026 Vibly | <a href="/contact" style="color: inherit; text-decoration: underline;">Report a Problem</a>
                 </div>
             </div>
         </aside>
@@ -131,7 +128,7 @@ if (!isset($_SESSION['username'])) {
                     <button type="button" id="modal-delete-account-btn" style="background: rgba(239, 68, 68, 0.05); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 0.8rem; cursor: pointer; flex: 1; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.borderColor='rgba(239, 68, 68, 0.4)';" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'; this.style.borderColor='rgba(239, 68, 68, 0.2)';">
                         Delete
                     </button>
-                    <a href="logout.php" style="background: var(--primary-gradient); color: white; border: none; border-radius: 12px; padding: 0.8rem; text-decoration: none; text-align: center; flex: 1; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(139, 92, 246, 0.5)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.3)';">
+                    <a href="/logout" style="background: var(--primary-gradient); color: white; border: none; border-radius: 12px; padding: 0.8rem; text-decoration: none; text-align: center; flex: 1; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(139, 92, 246, 0.5)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.3)';">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
@@ -143,10 +140,14 @@ if (!isset($_SESSION['username'])) {
         </div>
     </div>
 
+    <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
     <script>
         // Inject the PHP session username into a global JS variable securely
-        const MY_USERNAME = <?php echo json_encode($_SESSION['username']); ?>;
+        const MY_USERNAME = <?php echo json_encode($current_user); ?>;
+        // Inject Pusher Key from environment if available (passed via PHP)
+        const PUSHER_KEY = <?php echo json_encode(getenv('PUSHER_APP_KEY') ?: '9ac7b2ea2db44e457c4e'); ?>;
+        const PUSHER_CLUSTER = <?php echo json_encode(getenv('PUSHER_APP_CLUSTER') ?: 'ap2'); ?>;
     </script>
-    <script src="app.js"></script>
+    <script src="/app.js"></script>
 </body>
 </html>

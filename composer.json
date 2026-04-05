@@ -1,8 +1,8 @@
 {
     "name": "thoma/realtime-chat",
-    "description": "Real-time PHP Chatbot using Ratchet",
+    "description": "Real-time PHP Chatbot using Pusher on Vercel",
     "require": {
-        "cboden/ratchet": "^0.4.4",
+        "pusher/pusher-php-server": "^7.2",
         "phpmailer/phpmailer": "^6.8"
     },
     "autoload": {

@@ -1,8 +1,9 @@
 <?php
-session_start();
+require 'auth.php';
 require 'db.php';
 
-if (!isset($_SESSION['username'])) {
+$username = auth_user();
+if (!$username) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Not authenticated']);
     exit;
@@ -11,7 +12,6 @@ if (!isset($_SESSION['username'])) {
 $response = ['success' => false, 'error' => 'Unknown error'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_SESSION['username'];
     $fullName = trim($_POST['full_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $gender = trim($_POST['gender'] ?? '');

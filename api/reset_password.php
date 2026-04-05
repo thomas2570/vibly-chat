@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("UPDATE chatbot SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE reset_token = ?");
         if ($stmt->execute([$hashed, $token])) {
-            $success = "Your password has been reset successfully. You can now <a href='login.php' style='color: var(--primary-color);'>login</a>.";
+            $success = "Your password has been reset successfully. You can now <a href='/login' style='color: var(--primary-color);'>login</a>.";
         } else {
             $error = "An error occurred while resetting your password.";
         }
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
 <head>
     <meta charset="UTF-8">
     <title>Reset Password - Vibly</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>

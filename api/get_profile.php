@@ -1,14 +1,15 @@
 <?php
-session_start();
+require 'auth.php';
 require 'db.php';
 
-if (!isset($_SESSION['username'])) {
+$loggedIn = auth_user();
+if (!$loggedIn) {
     http_response_code(401);
     echo json_encode(['error' => 'Not authenticated']);
     exit;
 }
 
-$username = $_SESSION['username'];
+$username = $loggedIn;
 if (isset($_GET['user']) && !empty($_GET['user'])) {
     $username = $_GET['user'];
 }

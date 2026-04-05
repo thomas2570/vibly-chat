@@ -1,8 +1,9 @@
 <?php
-session_start();
+require 'auth.php';
 require 'db.php';
 
-if (!isset($_SESSION['username'])) {
+$currentUser = auth_user();
+if (!$currentUser) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit;
@@ -13,7 +14,6 @@ header('Content-Type: application/json');
 $query = $_GET['q'] ?? '';
 
 try {
-    $currentUser = $_SESSION['username'];
     
     if (strlen($query) < 1) {
         $stmt = $pdo->prepare("

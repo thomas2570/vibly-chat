@@ -1,0 +1,48 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.2"
+    }
+  },
+  "routes": [
+    { "src": "/style\\.css", "dest": "/style.css" },
+    { "src": "/app\\.js",    "dest": "/app.js" },
+    { "src": "/",            "dest": "/api/login.php" },
+    { "src": "/login\\.php", "dest": "/api/login.php" },
+    { "src": "/login",       "dest": "/api/login.php" },
+    { "src": "/register\\.php", "dest": "/api/register.php" },
+    { "src": "/register",    "dest": "/api/register.php" },
+    { "src": "/index\\.php", "dest": "/api/index.php" },
+    { "src": "/index",       "dest": "/api/index.php" },
+    { "src": "/logout\\.php","dest": "/api/logout.php" },
+    { "src": "/logout",      "dest": "/api/logout.php" },
+    { "src": "/forgot_password\\.php", "dest": "/api/forgot_password.php" },
+    { "src": "/forgot_password",       "dest": "/api/forgot_password.php" },
+    { "src": "/reset_password\\.php",  "dest": "/api/reset_password.php" },
+    { "src": "/reset_password",        "dest": "/api/reset_password.php" },
+    { "src": "/contact\\.php", "dest": "/api/contact.php" },
+    { "src": "/contact",       "dest": "/api/contact.php" },
+    { "src": "/fetch_messages\\.php", "dest": "/api/fetch_messages.php" },
+    { "src": "/fetch_messages",       "dest": "/api/fetch_messages.php" },
+    { "src": "/send_message\\.php", "dest": "/api/send_message.php" },
+    { "src": "/send_message",       "dest": "/api/send_message.php" },
+    { "src": "/edit_message\\.php", "dest": "/api/edit_message.php" },
+    { "src": "/edit_message",       "dest": "/api/edit_message.php" },
+    { "src": "/delete_message\\.php", "dest": "/api/delete_message.php" },
+    { "src": "/delete_message",       "dest": "/api/delete_message.php" },
+    { "src": "/mark_read\\.php", "dest": "/api/mark_read.php" },
+    { "src": "/mark_read",       "dest": "/api/mark_read.php" },
+    { "src": "/search_users\\.php", "dest": "/api/search_users.php" },
+    { "src": "/search_users",       "dest": "/api/search_users.php" },
+    { "src": "/get_profile\\.php", "dest": "/api/get_profile.php" },
+    { "src": "/get_profile",       "dest": "/api/get_profile.php" },
+    { "src": "/update_profile\\.php", "dest": "/api/update_profile.php" },
+    { "src": "/update_profile",       "dest": "/api/update_profile.php" },
+    { "src": "/delete_account\\.php", "dest": "/api/delete_account.php" },
+    { "src": "/delete_account",       "dest": "/api/delete_account.php" },
+    { "src": "/pusher_auth",   "dest": "/api/pusher_auth.php" },
+    { "src": "/inject\\.php", "dest": "/api/inject.php" },
+    { "src": "/setup\\.php",  "dest": "/api/setup.php" }
+  ]
+}

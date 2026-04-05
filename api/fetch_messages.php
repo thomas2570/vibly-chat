@@ -1,15 +1,15 @@
 <?php
-session_start();
+require 'auth.php';
 require 'db.php';
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['username']) || !isset($_GET['target'])) {
+$user1 = auth_user();
+if (!$user1 || !isset($_GET['target'])) {
     echo json_encode(['error' => 'Missing parameters']);
     exit;
 }
 
-$user1 = $_SESSION['username'];
 $user2 = $_GET['target'];
 
 try {

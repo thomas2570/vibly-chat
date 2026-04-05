@@ -56,92 +56,106 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function connect() {
-        let wsUrl = '';
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            wsUrl = 'ws://localhost:8080';
-        } else {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            wsUrl = protocol + '//' + window.location.host + '/ws';
+        if (typeof Pusher === 'undefined') {
+            console.error('Pusher SDK not loaded');
+            return;
         }
-        
-        ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => {
+        const pusher = new Pusher(PUSHER_KEY, {
+            cluster: PUSHER_CLUSTER,
+            forceTLS: true,
+            authEndpoint: '/pusher_auth'
+        });
+
+        const channel = pusher.subscribe('private-user-' + username);
+
+        // ── Presence channel: track who's online globally ──────────────────
+        const presenceChannel = pusher.subscribe('presence-global');
+
+        presenceChannel.bind('pusher:subscription_succeeded', (members) => {
+            onlineUsers = [];
+            members.each(m => { if (m.id !== username) onlineUsers.push(m.id); });
+            searchUsers(userSearch.value.trim());
+        });
+
+        presenceChannel.bind('pusher:member_added', (member) => {
+            if (!onlineUsers.includes(member.id)) onlineUsers.push(member.id);
+            updateOnlineDot(member.id, true);
+        });
+
+        presenceChannel.bind('pusher:member_removed', (member) => {
+            onlineUsers = onlineUsers.filter(u => u !== member.id);
+            updateOnlineDot(member.id, false);
+        });
+
+        pusher.connection.bind('connected', () => {
             statusEl.textContent = 'Connected';
             statusEl.className = 'status connected';
-            ws.send(JSON.stringify({ type: 'auth', username: username }));
             searchUsers('');
-        };
+        });
 
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'presence') {
-                    onlineUsers = data.users;
-                    updateUserListIndicators();
-                } else if (data.type === 'chat') {
-                    if (data.sender === targetUser) {
-                        const timestamp = data.unix_time || data.created_at || Math.floor(Date.now() / 1000);
-                        addMessage(data.message, 'incoming', data.sender, data.isImage, timestamp, data.is_read, data.id);
-                        // Send read receipt actively
-                        ws.send(JSON.stringify({ type: 'mark_read', target: data.sender }));
-                    } else {
-                        let badge = document.querySelector(`.unread-badge[data-user="${data.sender}"]`);
-                        if (badge) {
-                            badge.style.display = 'inline-block';
-                            badge.textContent = parseInt(badge.textContent || '0') + 1;
-                            badge.style.marginLeft = 'auto';
-                        } else {
-                            searchUsers(document.getElementById('user-search').value.trim()); 
-                        }
-                    }
-                } else if (data.type === 'ack_message') {
-                    if (data.tempId && data.id) {
-                        const el = document.querySelector(`.message-wrapper[data-tempid="${data.tempId}"]`);
-                        if (el) {
-                            el.dataset.id = data.id;
-                            el.removeAttribute('data-tempid');
-                        }
-                    }
-                } else if (data.type === 'edit') {
-                    const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
-                    if (el) {
-                        const msgSpan = el.querySelector('.msg-text');
-                        if (msgSpan) {
-                            msgSpan.textContent = data.message;
-                            el.classList.add('is-edited');
-                        }
-                    }
-                } else if (data.type === 'delete') {
-                    const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
-                    if (el) el.remove();
-                } else if (data.type === 'read_receipt') {
-                    if (data.target === targetUser) {
-                        document.querySelectorAll('.message-wrapper.outgoing .receipt').forEach(el => {
-                            el.textContent = '✔✔';
-                            el.classList.add('seen');
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error('Invalid message format:', event.data, e);
-            }
-        };
-
-        ws.onclose = () => {
+        pusher.connection.bind('disconnected', () => {
             statusEl.textContent = 'Disconnected';
             statusEl.className = 'status disconnected';
-            setTimeout(connect, 3000);
-        };
+        });
 
-        ws.onerror = (err) => {
-            console.error('WebSocket error:', err);
-        };
+        channel.bind('chat-event', (data) => {
+            if (data.sender === targetUser) {
+                const timestamp = data.unix_time || Math.floor(Date.now() / 1000);
+                addMessage(data.message, 'incoming', data.sender, data.isImage, timestamp, 0, data.id);
+                // Send read receipt via fetch
+                markRead(data.sender);
+            } else {
+                let badge = document.querySelector(`.unread-badge[data-user="${data.sender}"]`);
+                if (badge) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = parseInt(badge.textContent || '0') + 1;
+                    badge.style.marginLeft = 'auto';
+                } else {
+                    searchUsers(document.getElementById('user-search').value.trim()); 
+                }
+            }
+        });
+
+        channel.bind('read-receipt-event', (data) => {
+            if (data.target === targetUser) {
+                document.querySelectorAll('.message-wrapper.outgoing .receipt').forEach(el => {
+                    el.textContent = '✔✔';
+                    el.classList.add('seen');
+                });
+            }
+        });
+
+        channel.bind('edit-event', (data) => {
+            const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
+            if (el) {
+                const msgSpan = el.querySelector('.msg-text');
+                if (msgSpan) {
+                    msgSpan.textContent = data.message;
+                    el.classList.add('is-edited');
+                }
+            }
+        });
+
+        channel.bind('delete-event', (data) => {
+            const el = document.querySelector(`.message-wrapper[data-id="${data.id}"]`);
+            if (el) el.remove();
+        });
+
+        // We use presence-global channel (above) for online status.
+    }
+
+    function markRead(target) {
+        const formData = new FormData();
+        formData.append('target', target);
+        fetch('/mark_read', {
+            method: 'POST',
+            body: formData
+        });
     }
 
     function searchUsers(query) {
-        fetch(`search_users.php?q=${encodeURIComponent(query)}`)
+        fetch(`/search_users?q=${encodeURIComponent(query)}`)
             .then(res => res.json())
             .then(users => {
                 userList.innerHTML = '';
@@ -152,27 +166,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 users.forEach(u => {
                     const li = document.createElement('li');
-                    li.style.display = 'flex';
-                    li.style.alignItems = 'center';
-                    li.style.gap = '10px';
-                    
+                    li.dataset.user = u.username;
+
                     const avatarSrc = getAvatar(u.profile_image);
                     const isOnline = (onlineUsers.includes(u.username) && u.username !== username);
-                    const dotHtml = isOnline ? `<span class="online-dot" style="position:static; margin-left:auto; transform:none;"></span>` : '';
-                    
                     const unreadCount = parseInt(u.unread_count || '0');
-                    const badgeHtml = `<span class="unread-badge" data-user="${u.username}" style="${unreadCount > 0 ? 'display:inline-block;' : 'display:none;'} margin-left: ${isOnline ? '5px' : 'auto'};">${unreadCount}</span>`;
 
-                    li.innerHTML = `
-                        <img src="${avatarSrc}" onerror="this.src='${DEFAULT_AVATAR}'" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
-                        <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${u.username}</span>
-                        ${dotHtml}
-                        ${badgeHtml}
-                    `;
-                    
-                    if (u.username === targetUser) {
-                        li.classList.add('active');
-                    }
+                    const dotHtml = isOnline
+                        ? '<span class="online-dot" style="position:static;transform:none;flex-shrink:0;"></span>'
+                        : '';
+                    const badgeStr = unreadCount > 99 ? '99+' : String(unreadCount);
+                    const badgeHtml = '<span class="unread-badge" data-user="' + u.username + '" style="display:' + (unreadCount > 0 ? 'inline-flex' : 'none') + ';">' + badgeStr + '</span>';
+
+                    li.innerHTML =
+                        '<img src="' + avatarSrc + '" onerror="this.src=\''+DEFAULT_AVATAR+'\'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">' +
+                        '<span class="user-name-text" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + u.username + '</span>' +
+                        '<span class="indicators-wrap" style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' + dotHtml + badgeHtml + '</span>';
+
+                    if (u.username === targetUser) li.classList.add('active');
                     li.addEventListener('click', () => selectUser(u.username, li));
                     userList.appendChild(li);
                 });
@@ -182,6 +193,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateUserListIndicators() {
         searchUsers(userSearch.value.trim());
+    }
+
+    // Update a single user's online dot without re-rendering the whole list
+    function updateOnlineDot(uname, isOnline) {
+        const items = document.querySelectorAll('.user-list li');
+        items.forEach(li => {
+            const nameEl = li.querySelector('.user-name-text');
+            if (!nameEl || nameEl.textContent !== uname) return;
+            const dot = li.querySelector('.online-dot');
+            const badge = li.querySelector('.unread-badge');
+            const indicators = li.querySelector('.indicators-wrap');
+            if (!indicators) return;
+            if (isOnline) {
+                if (!dot) {
+                    const d = document.createElement('span');
+                    d.className = 'online-dot';
+                    d.style.cssText = 'position:static;transform:none;flex-shrink:0;';
+                    indicators.insertBefore(d, indicators.firstChild);
+                }
+            } else {
+                if (dot) dot.remove();
+            }
+        });
     }
 
     function selectUser(selectedUsername, liElement) {
@@ -205,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesContainer.innerHTML = '';
         addSystemMessage(`Loading chat history with ${selectedUsername}...`);
 
-        fetch('fetch_messages.php?target=' + encodeURIComponent(selectedUsername))
+        fetch('/fetch_messages?target=' + encodeURIComponent(selectedUsername))
             .then(res => res.json())
             .then(messages => {
                 messagesContainer.innerHTML = ''; 
@@ -221,10 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 
-                // Transmit read state immediately
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'mark_read', target: selectedUsername }));
-                }
+                // Transmit read state immediately via fetch
+                markRead(selectedUsername);
             })
             .catch(err => {
                 messagesContainer.innerHTML = '';
@@ -259,32 +291,56 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!msg) return;
         
         if (editingMessageId) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                if (editingMessageSpan && msg === editingMessageSpan.textContent) {
-                    cancelEditMode();
-                    return;
-                }
-                ws.send(JSON.stringify({ type: 'edit', id: editingMessageId, message: msg, target: targetUser }));
-                if (editingMessageSpan) editingMessageSpan.textContent = msg;
-                if (editingMessageWrapper) editingMessageWrapper.classList.add('is-edited');
+            if (editingMessageSpan && msg === editingMessageSpan.textContent) {
                 cancelEditMode();
-            } else {
-                alert("Cannot connect to server to edit.");
+                return;
             }
+
+            const formData = new FormData();
+            formData.append('id', editingMessageId);
+            formData.append('message', msg);
+            formData.append('target', targetUser);
+
+            fetch('/edit_message', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (editingMessageSpan) editingMessageSpan.textContent = msg;
+                    if (editingMessageWrapper) editingMessageWrapper.classList.add('is-edited');
+                    cancelEditMode();
+                } else {
+                    alert("Error editing: " + (data.message || data.error));
+                }
+            });
             return;
         }
 
-        if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
+        if (targetUser) {
             const unixTime = Math.floor(Date.now() / 1000);
             const tempId = 'temp_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-            const payload = JSON.stringify({ 
-                type: 'chat', 
-                target: targetUser, 
-                message: msg,
-                unix_time: unixTime,
-                tempId: tempId
+            
+            const formData = new FormData();
+            formData.append('target', targetUser);
+            formData.append('message', msg);
+            formData.append('unix_time', unixTime);
+            
+            fetch('/send_message', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const el = document.querySelector(`.message-wrapper[data-tempid="${tempId}"]`);
+                    if (el) {
+                        el.dataset.id = data.id;
+                        el.removeAttribute('data-tempid');
+                    }
+                }
             });
-            ws.send(payload);
             
             addMessage(msg, 'outgoing', username, false, unixTime, 0, null, tempId);
             messageInput.value = '';
@@ -316,15 +372,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
                 const unixTime = Math.floor(Date.now() / 1000);
 
-                if (targetUser && ws && ws.readyState === WebSocket.OPEN) {
-                    const payload = JSON.stringify({ 
-                        type: 'chat', 
-                        target: targetUser, 
-                        message: compressedBase64,
-                        isImage: true,
-                        unix_time: unixTime
+                if (targetUser) {
+                    const formData = new FormData();
+                    formData.append('target', targetUser);
+                    formData.append('message', compressedBase64);
+                    formData.append('isImage', 'true');
+                    formData.append('unix_time', unixTime);
+
+                    fetch('/send_message', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        // Image ack
                     });
-                    ws.send(payload);
+
                     addMessage(compressedBase64, 'outgoing', username, true, unixTime, 0);
                 }
             };
@@ -386,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (profileCache[senderName]) {
                 avatarImg.src = getAvatar(profileCache[senderName]);
             } else {
-                fetch(`get_profile.php?user=${encodeURIComponent(senderName)}`)
+                fetch(`/get_profile?user=${encodeURIComponent(senderName)}`)
                     .then(r => r.json())
                     .then(d => {
                         if (d.profile_image) {
@@ -515,10 +578,24 @@ document.addEventListener('DOMContentLoaded', () => {
             delBtn.onclick = () => {
                 if (confirm('Delete this message?')) {
                     const actualId = msgWrapper.dataset.id;
-                    if (actualId && ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'delete', id: actualId, target: targetUser }));
-                        msgWrapper.remove();
-                    } else if (!actualId) {
+                    if (actualId) {
+                        const formData = new FormData();
+                        formData.append('id', actualId);
+                        formData.append('target', targetUser);
+
+                        fetch('/delete_message', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                msgWrapper.remove();
+                            } else {
+                                alert("Error deleting: " + (data.message || data.error));
+                            }
+                        });
+                    } else {
                         alert("Message is still sending, please wait a moment.");
                     }
                 }
@@ -577,7 +654,7 @@ const profileImageInput = document.getElementById('profile-image-input');
 const previewProfileImg = document.getElementById('preview-profile-img');
 
 // Load initial profile data
-fetch('get_profile.php')
+fetch('/get_profile')
     .then(res => res.json())
     .then(data => {
         if (data.profile_image) {
@@ -636,7 +713,7 @@ profileForm.addEventListener('submit', (e) => {
     }
     
     // Check if passwords are provided if we were doing password here, but we are not
-    fetch('update_profile.php', {
+    fetch('/update_profile', {
         method: 'POST',
         body: formData
     })
@@ -696,7 +773,7 @@ profileForm.addEventListener('submit', (e) => {
             confirmDeleteBtn.textContent = 'Deleting...';
             confirmDeleteBtn.disabled = true;
 
-            fetch('delete_account.php', {
+            fetch('/delete_account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: pwd })
@@ -704,7 +781,7 @@ profileForm.addEventListener('submit', (e) => {
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    window.location.href = 'login.php';
+                    window.location.href = '/login';
                 } else {
                     deleteErrorMsg.textContent = data.message;
                     deleteErrorMsg.style.display = 'block';

@@ -1,6 +1,4 @@
 <?php
-session_start();
-session_write_close(); // Unlock session immediately so user can navigate away instantly!
 require 'db.php';
 
 $error = '';
@@ -25,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Use mailer.php to send email
         require_once 'mailer.php';
         
-        $resetLink = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . $token;
+        $resetLink = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/reset_password?token=' . $token;
         $subject = "Vibly Password Reset";
         $body = "Hi " . htmlspecialchars($user['username']) . ",<br><br>";
         $body .= "We received a request to reset your password. Click the link below to set a new password:<br><br>";
@@ -52,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Forgot Password - Vibly</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -70,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" id="reset-btn" style="transition: opacity 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">Send Reset Link</button>
             </form>
             <div class="auth-links">
-                Remember your password? <a href="login.php">Back to Login</a>
+                Remember your password? <a href="/login">Back to Login</a>
             </div>
         </div>
     </div>
@@ -92,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             formData.append('email', email);
             formData.append('ajax', '1');
             
-            fetch('forgot_password.php', {
+            fetch('/forgot_password', {
                 method: 'POST',
                 body: formData
             })
